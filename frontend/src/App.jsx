@@ -21,9 +21,6 @@ import DaftarKonten from "./pages/konten/DaftarKonten.jsx";
 import BookingDetail from "./pages/landingpage/BookingDetail.jsx";
 import PaymentFinish from './pages/landingpage/PaymentFinish.jsx';
 
-// import './app.css'
-import './assets/css/style.css'
-
 export default function App() {
   return (
     <Routes>

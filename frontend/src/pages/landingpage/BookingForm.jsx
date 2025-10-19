@@ -125,88 +125,108 @@ export default function BookingForm() {
   // ===========================================================================
 
   return (
-    <div className="container my-5">
-      <div className="row justify-content-center">
-        <div className="col-lg-8">
-          <div className="card shadow-sm border-0">
-            <div className="card-body p-4 p-md-5 position-relative">
-              
+    <div className="container-xxl py-5 wow fadeInUp" data-wow-delay="0.1s">
+      <div className="container">
+        <div className="row justify-content-center">
+          <div className="col-lg-8">
+            {/* Card styling akan diambil dari style.css */}
+            <div className="card shadow-sm">
+              <div className="card-body p-4 p-md-5 position-relative">
+                {/* Tombol kembali (bisa di-style lebih lanjut jika perlu) */}
               <button
-                className="btn btn-link text-secondary position-absolute top-0 start-0 mt-3 ms-3"
-                onClick={handleGoBack}
-              >
-                <i className="bi bi-arrow-left"></i>
-              </button>
+                  className="btn btn-sm btn-outline-secondary position-absolute top-0 start-0 mt-3 ms-3"
+                  onClick={handleGoBack}
+                  style={{zIndex: 2}} // Pastikan di atas elemen lain
+                  title="Kembali ke Daftar Kamar"
+                >
+                  <i className="fas fa-arrow-left"></i>
+                </button>
               
-              <div className="text-center mb-4">
-                <h2 className="card-title fw-bold">Formulir Pemesanan Kamar</h2>
-                <p className="text-muted">Isi detail di bawah ini untuk memesan kamar Anda.</p>
-              </div>
+              {/* Judul dengan gaya tema */}
+                <div className="text-center mb-4">
+                  <h5 className="section-title ff-secondary text-center text-primary fw-normal">Booking</h5>
+                  <h1 className="mb-3">Formulir Pemesanan Kamar</h1>
+                  <p className="text-muted">Isi detail di bawah ini untuk memesan kamar Anda.</p>
+                </div>
               
               {message && ( <div className={`alert ${message.startsWith("❌") ? 'alert-danger':'alert-success'}`} role="alert">{message}</div> )}
 
               <form onSubmit={handleSubmit}>
-                <div className="input-group mb-3">
-                  <span className="input-group-text"><i className="bi bi-person-fill"></i></span>
-                  <input type="text" className="form-control" placeholder="Nama Lengkap" name="guestName" value={formData.guestName} onChange={handleChange} required/>
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text"><i className="bi bi-envelope-fill"></i></span>
-                  <input type="email" className="form-control" placeholder="Alamat Email" name="email" value={formData.email} onChange={handleChange} required/>
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text"><i className="bi bi-telephone-fill"></i></span>
-                  <input type="text" className="form-control" placeholder="No. Handphone" name="phone" value={formData.phone} onChange={handleChange} required/>
-                </div>
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <div className="input-group">
-                       <span className="input-group-text"><i className="bi bi-box-arrow-in-right"></i></span>
-                       <input type="date" className="form-control" name="checkIn" value={formData.checkIn} onChange={handleChange} required min={today} />
+                {/* Input fields dengan Bootstrap Icons */}
+                  <div className="input-group mb-3">
+                    <span className="input-group-text"><i className="bi bi-person-fill text-primary"></i></span>
+                    <input type="text" className="form-control" placeholder="Nama Lengkap" name="guestName" value={formData.guestName} onChange={handleChange} required/>
+                  </div>
+                  <div className="input-group mb-3">
+                    <span className="input-group-text"><i className="bi bi-envelope-fill text-primary"></i></span>
+                    <input type="email" className="form-control" placeholder="Alamat Email" name="email" value={formData.email} onChange={handleChange} required/>
+                  </div>
+                  <div className="input-group mb-3">
+                    <span className="input-group-text"><i className="bi bi-telephone-fill text-primary"></i></span>
+                    <input type="text" className="form-control" placeholder="No. Handphone" name="phone" value={formData.phone} onChange={handleChange} required/>
+                  </div>
+                  <div className="row g-3"> {/* Use g-3 for gap */}
+                    <div className="col-md-6 mb-3">
+                      <div className="input-group">
+                         <span className="input-group-text"><i className="bi bi-calendar-check text-primary"></i></span> {/* Check-in Icon */}
+                         <input type="date" className="form-control" name="checkIn" value={formData.checkIn} onChange={handleChange} required min={today} />
+                      </div>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <div className="input-group">
+                         <span className="input-group-text"><i className="bi bi-calendar-x text-primary"></i></span> {/* Check-out Icon */}
+                         <input type="date" className="form-control" name="checkOut" value={formData.checkOut} onChange={handleChange} required min={formData.checkIn || today} disabled={!formData.checkIn} />
+                      </div>
                     </div>
                   </div>
-                  <div className="col-md-6 mb-3">
-                    <div className="input-group">
-                       <span className="input-group-text"><i className="bi bi-box-arrow-left"></i></span>
-                       <input type="date" className="form-control" name="checkOut" value={formData.checkOut} onChange={handleChange} required min={formData.checkIn} disabled={!formData.checkIn} />
-                    </div>
+                  <div className="input-group mb-3">
+                    <span className="input-group-text"><i className="bi bi-door-open-fill text-primary"></i></span>
+                    <select className="form-select" name="roomType" value={formData.roomType} onChange={handleChange} required>
+                      <option value="" disabled>--- Pilih Tipe Kamar ---</option>
+                      <option value="FBK">Fhandika Boutique - 1377K</option>
+                      <option value="FSKG">Fhandika SS King - 1077K</option>
+                      <option value="FSST">Fhandika SS Twin - 1077K</option>
+                      <option value="DXQ">Fhandika DXQ - 877K</option>
+                    </select>
                   </div>
-                </div>
-                <div className="input-group mb-3">
-                  <span className="input-group-text"><i className="bi bi-door-open-fill"></i></span>
-                  <select className="form-select" name="roomType" value={formData.roomType} onChange={handleChange} required>
-                    <option value="" disabled>--- Pilih Tipe Kamar ---</option>
-                    <option value="FBK">Fhandika Boutique - 1377K</option>
-                    <option value="FSKG">Fhandika SS King - 1077K</option>
-                    <option value="FSST">Fhandika SS Twin - 1077K</option>
-                    <option value="DXQ">Fhandika DXQ - 877K</option>
-                  </select>
-                </div>
-                
-                <div className="text-center mb-3">
-                  <button type="button" className="btn btn-outline-info" onClick={handleCheckAvailability} disabled={isChecking || !formData.checkIn || !formData.checkOut || !formData.roomType}>
-                    {isChecking ? (<><span className="spinner-border spinner-border-sm"></span><span className="ms-2">Mengecek...</span></>) : ("Cek Ketersediaan Kamar")}
-                  </button>
-                </div>
 
-                {availability.checked && (
-                  <div className={`alert ${availability.available ? 'alert-success' : 'alert-warning'}`} role="alert">
-                    {availability.available ? `✅ ${availability.message}` : `⚠️ ${availability.message}`}
+                  {/* Tombol Cek Ketersediaan - Gunakan outline-primary */}
+                  <div className="text-center my-3">
+                    <button type="button" className="btn btn-outline-primary" onClick={handleCheckAvailability} disabled={isChecking || !formData.checkIn || !formData.checkOut || !formData.roomType}>
+                      {isChecking ? (<><span className="spinner-border spinner-border-sm"></span><span className="ms-2">Mengecek...</span></>) : (<><i className="bi bi-search me-1"></i> Cek Ketersediaan</>)}
+                    </button>
+                  </div>
+
+                  {/* Alert Ketersediaan */}
+                  {availability.checked && (
+                  <div className={`text-center mb-3 py-2 px-3 rounded ${availability.available ? 'bg-success-subtle text-success-emphasis' : 'bg-danger-subtle text-danger-emphasis fw-semibold'}`}> {/* Gunakan background subtle */}
+                    {availability.available ?
+                      <><i className="bi bi-check-circle-fill me-2"></i>{availability.message}</> : // Ikon success
+                      <><i className="bi bi-exclamation-triangle-fill me-2"></i>{availability.message}</> // Ikon warning/danger
+                    }
                   </div>
                 )}
-                
-                <div className="input-group mb-4">
-                  <span className="input-group-text"><i className="bi bi-pencil-fill"></i></span>
-                  <textarea className="form-control" placeholder="Catatan tambahan (opsional)" name="notes" rows="3" value={formData.notes} onChange={handleChange}></textarea>
-                </div>
 
-                <div className="d-flex justify-content-center gap-5">
-                  <button type="button" className="btn btn-outline-danger" onClick={handleReset}>Kosongkan Form</button>
-                  <button type="submit" className="btn btn-primary px-4" disabled={isLoading || (availability.checked && !availability.available)}>
-                    {isLoading ? (<><span className="spinner-border spinner-border-sm"></span><span className="ms-2">Mengirim...</span></>) : ("Booking Sekarang")}
-                  </button>
-                </div>
-              </form>
+                  <div className="input-group mb-4">
+                    <span className="input-group-text"><i className="bi bi-pencil-fill text-primary"></i></span>
+                    <textarea className="form-control" placeholder="Catatan tambahan (opsional)" name="notes" rows="3" value={formData.notes} onChange={handleChange}></textarea>
+                  </div>
+
+                  {/* Tombol Aksi */}
+                  <div className="d-flex justify-content-center gap-3 mt-4">
+                    <button type="button" className="btn btn-outline-secondary" onClick={handleReset}> {/* Secondary for Reset */}
+                       <i className="bi bi-arrow-clockwise me-1"></i> Kosongkan
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary px-4 py-2" // Primary for Submit
+                      disabled={isLoading || (availability.checked && !availability.available)}
+                     >
+                      {isLoading ? (<><span className="spinner-border spinner-border-sm"></span><span className="ms-2">Mengirim...</span></>) : (<><i className="bi bi-send-check me-1"></i> Booking Sekarang</>)}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>

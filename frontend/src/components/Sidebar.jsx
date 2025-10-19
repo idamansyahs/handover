@@ -1,51 +1,55 @@
-// src/components/Sidebar.jsx
 import React, { useContext } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
+// Icon bisa dari Bootstrap Icons (impor di style.css) atau Font Awesome
 
-export default function Sidebar({theme}) {
-  const { logout } = useContext(AuthContext);
-  const location = useLocation();
+export default function Sidebar() {
+  const { user, logout } = useContext(AuthContext); // Ambil user jika perlu
+  const navigate = useNavigate();
 
-  const navItems = [
-    // { path: "/dashboard", label: "Dashboard" },
-    { path: "/room", label: "Rooms" },
-    { path: "/bookings", label: "Bookings" },
-    { path: "/konten-management", label: "konten" }
-  ];
-
-  const sidebarClass = theme === 'dark' ? 'bg-dark text-white' : 'bg-light text-dark';
-  const borderClass = theme === 'dark' ? 'border-secondary' : '';
-  const linkClass = theme === 'dark' ? 'text-white' : 'text-dark';
+  const handleLogout = () => {
+    logout();
+    // navigate("/login"); // AuthContext mungkin sudah handle redirect
+  };
 
   return (
-    <aside className={`d-flex flex-column flex-shrink-0 p-3 min-vh-100 ${sidebarClass}`} style={{ width: "250px" }}>
-      {/* Logo */}
-      <div className={`text-center mb-4 border-bottom pb-3 ${borderClass}`}>
-        <h2 className="fs-4 fw-bold">Hotel Admin</h2>
-      </div>
-
-      {/* Navigation */}
+    // Gunakan kelas sidebar dari style.css
+    <aside className="d-flex flex-column flex-shrink-0 p-3 sidebar">
+      <Link to="/dashboard" className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none text-white">
+        {/* Ikon dan Judul Panel */}
+        <i className="fas fa-hotel fs-4 me-2 text-primary"></i> {/* Ganti ikon jika perlu */}
+        <span className="fs-5 fw-semibold">FBI Admin</span>
+      </Link>
+      <hr /> {/* Pemisah, style dari CSS */}
       <ul className="nav nav-pills flex-column mb-auto">
-        {navItems.map((item) => (
-          <li className="nav-item" key={item.path}>
-            <Link
-              to={item.path}
-              className={`nav-link ${location.pathname === item.path ? "active" : linkClass
-                }`}
-            >
-              {item.label}
-            </Link>
+        {/* Gunakan NavLink untuk kelas 'active' otomatis */}
+        <li className="nav-item mb-1">
+          <NavLink to="/dashboard" className="nav-link" end> {/* Tambahkan 'end' prop */}
+            <i className="bi bi-speedometer2 me-2"></i> Dashboard
+          </NavLink>
+        </li>
+        <li className="nav-item mb-1">
+          <NavLink to="/bookings" className="nav-link">
+            <i className="bi bi-journal-bookmark-fill me-2"></i> Bookings
+          </NavLink>
+        </li>
+        <li className="nav-item mb-1">
+          <NavLink to="/room" className="nav-link">
+            <i className="bi bi-door-open-fill me-2"></i> Rooms
+          </NavLink>
+        </li>
+        <li className="nav-item mb-1">
+          <NavLink to="/konten-management" className="nav-link">
+             <i className="bi bi-pencil-square me-2"></i> Konten
+          </NavLink>
+        </li>
+          <li className="nav-item mb-1 mt-auto pt-3 border-top border-secondary">
+            <button className="nav-link text-danger" onClick={handleLogout} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none' }}>
+              <i className="bi bi-box-arrow-right me-2"></i> Sign out
+            </button>
           </li>
-        ))}
+        {/* Tambahkan menu lain jika ada */}
       </ul>
-
-      {/* Logout */}
-      <div className="mt-auto border-top pt-3">
-        <button onClick={logout} className="btn btn-danger w-100">
-          Logout
-        </button>
-      </div>
     </aside>
   );
 }

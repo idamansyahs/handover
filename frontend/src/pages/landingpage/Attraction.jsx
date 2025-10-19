@@ -1,23 +1,33 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-// 1. Impor gambar di bagian atas
+// Impor gambar
 import destination1 from '/src/assets/img/destination-1.jpg'
 import destination2 from '/src/assets/img/destination-2.jpg'
 import destination3 from '/src/assets/img/destination-3.jpeg'
 import destination4 from '/src/assets/img/destination-4.jpg'
 
 const Attraction = () => {
+
+  const [attractionData, setAttractionData] = useState({
+    uleeLheue: { distance: "", duration: "" },
+    masjidRaya: { distance: "", duration: "" },
+    museumAceh: { distance: "", duration: "" },
+    museumTsunami: { distance: "", duration: "" }
+  });
+
+  useEffect(() => {
+    // Data ini didapat dari hasil panggilan API navigasi (simulasi)
+    setAttractionData({
+      uleeLheue: { distance: "1,7 km", duration: "3 mnt" },
+      masjidRaya: { distance: "3,8 km", duration: "6 mnt" },
+      museumAceh: { distance: "3,7 km", duration: "7 mnt" },
+      museumTsunami: { distance: "3 km", duration: "5 mnt" }
+    });
+  }, []);
+
   return (
     <div className="container-xxl bg-white p-0">
-      {/* spinner */}
-      {/* <div id="spinner" className="show bg-white position-fixed translate-middle w-100 vh-100 top-50 start-50 d-flex align-items-center justify-content-center">
-        <div className="spinner-border text-primary w-3 h-3" role="status">
-          <span className="sr-only">Loading...</span>
-        </div>
-      </div> */}
-      {/* spinner end */}
-
       {/* navbar and hero  */}
       <div className="container-xxl position-relative p-0">
         <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4 px-lg-5 py-3 py-lg-0">
@@ -77,31 +87,82 @@ const Attraction = () => {
             <div className="col-lg-7 col-md-6">
               <div className="row g-3">
                 <div className="col-lg-12 col-md-12 wow zoomIn" data-wow-delay="0.1s">
-                  {/* 2. Ganti <a> dengan <Link> dan src dengan variabel impor */}
-                  <Link to="/attractions/ulee-lheue-beach" className="position-relative d-block overflow-hidden">
+                  
+                  {/* --- PERBAIKAN: Ganti <div> kembali ke <a> dengan onClick disabled --- */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden"> 
                     <img className="img-fluid" src={destination1} alt="Ulee Lheue Beach" />
+                    
+                    {/* Info Jarak & Waktu */}
+                    {attractionData.uleeLheue.duration && (
+                      <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        {attractionData.uleeLheue.duration} ({attractionData.uleeLheue.distance})
+                      </div>
+                    )}
+                    
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Ulee Lheue Beach</div>
-                  </Link>
+                  </a>
+                  {/* --- AKHIR PERBAIKAN --- */}
+
                 </div>
                 <div className="col-lg-6 col-md-12 wow zoomIn" data-wow-delay="0.3s">
-                  <Link to="/attractions/masjid-raya-baiturrahman" className="position-relative d-block overflow-hidden">
+                  
+                  {/* --- PERBAIKAN: Ganti <div> kembali ke <a> dengan onClick disabled --- */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden">
                     <img className="img-fluid" src={destination2} alt="Masjid Raya Baiturrahman" />
+                    
+                    {/* Info Jarak & Waktu */}
+                    {attractionData.masjidRaya.duration && (
+                      <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        {attractionData.masjidRaya.duration} ({attractionData.masjidRaya.distance})
+                      </div>
+                    )}
+
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Masjid Raya Baiturrahman</div>
-                  </Link>
+                  </a>
+                  {/* --- AKHIR PERBAIKAN --- */}
+
                 </div>
                 <div className="col-lg-6 col-md-12 wow zoomIn" data-wow-delay="0.5s">
-                  <Link to="/attractions/museum-aceh" className="position-relative d-block overflow-hidden">
+
+                  {/* --- PERBAIKAN: Ganti <div> kembali ke <a> dengan onClick disabled --- */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden">
                     <img className="img-fluid" src={destination3} alt="Museum Aceh" />
+
+                    {/* Info Jarak & Waktu */}
+                    {attractionData.museumAceh.duration && (
+                      <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        {attractionData.museumAceh.duration} ({attractionData.museumAceh.distance})
+                      </div>
+                    )}
+
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Museum Aceh</div>
-                  </Link>
+                  </a>
+                  {/* --- AKHIR PERBAIKAN --- */}
+
                 </div>
               </div>
             </div>
             <div className="col-lg-5 col-md-6 wow zoomIn min-h-96" data-wow-delay="0.7s" >
-              <Link to="/attractions/museum-tsunami" className="position-relative d-block h-100 overflow-hidden">
+
+              {/* --- PERBAIKAN: Ganti <div> kembali ke <a> dengan onClick disabled --- */}
+              <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block h-100 overflow-hidden">
                 <img className="img-fluid position-absolute w-100 h-100" src={destination4} alt="Museum Tsunami" style={{ objectFit: 'cover' }} />
+                
+                {/* Info Jarak & Waktu */}
+                {attractionData.museumTsunami.duration && (
+                  <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                    <i className="fas fa-car-side me-2"></i>
+                    {attractionData.museumTsunami.duration} ({attractionData.museumTsunami.distance})
+                  </div>
+                )}
+                
                 <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Museum Tsunami</div>
-              </Link>
+              </a>
+              {/* --- AKHIR PERBAIKAN --- */}
+
             </div>
           </div>
         </div>

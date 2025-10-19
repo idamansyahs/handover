@@ -74,139 +74,140 @@ const RoomList = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const colors = {
-      OCCUPIED: "danger",
-      VCI: "success",
-      VCN: "secondary",
-      VDN: "warning",
-      OOO: "dark",
+  // Fungsi badge status dengan kontras teks
+    const getStatusBadge = (status) => {
+      const colors = {
+        OCCUPIED: "danger",   // Merah
+        VCI: "success",     // Hijau (Vacant Clean Inspected)
+        VCN: "info",        // Biru muda (Vacant Clean Not Inspected)
+        VDN: "warning",     // Kuning (Vacant Dirty Not Inspected)
+        OOO: "dark",        // Hitam/Gelap (Out of Order)
+      };
+      const textContrast = {
+         OCCUPIED: "white",
+         VCI: "white",
+         VCN: "dark",
+         VDN: "dark",
+         OOO: "white",
+      }
+      return <span className={`badge bg-${colors[status]} text-${textContrast[status]}`}>{status}</span>;
     };
-    return <span className={`badge bg-${colors[status]}`}>{status}</span>;
-  };
 
   return (
     <Layout>
-      <div className="container mt-5">
+      {/* Gunakan container-fluid */}
+      <div className="container-fluid py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="fw-bold">Room Management</h2>
+          <h1 className="h3 mb-0 fw-bold text-dark">Room Management</h1>
           <button
             className="btn btn-primary shadow-sm"
             data-bs-toggle="modal"
             data-bs-target="#addRoomModal"
           >
-            <i className="bi bi-plus-circle me-2"></i> Add Room
+            <i className="bi bi-plus-circle me-1"></i> Add Room
           </button>
         </div>
 
+        {/* Tampilan Card untuk Room */}
         <div className="row">
-          {rooms.map((room) => (
-            <div key={room.id} className="col-md-4 col-lg-3 mb-4">
+          {rooms.length > 0 ? rooms.map((room) => (
+            <div key={room.id} className="col-sm-6 col-md-4 col-lg-3 mb-4">
               <div className="card shadow-sm border-0 rounded-3 h-100">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="card-title fw-bold mb-0">
+                <div className="card-body d-flex flex-column">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <h5 className="card-title fw-bold mb-0 text-dark">
                       Room {room.roomNumber}
                     </h5>
                     {getStatusBadge(room.status)}
                   </div>
-                  <p className="text-muted mb-1">
+                  <p className="text-muted mb-1 small">
                     <strong>Type:</strong> {room.type}
                   </p>
-                  <p className="text-muted mb-3">
+                  <p className="text-muted mb-3 small">
                     <strong>Price:</strong> Rp{" "}
-                    {Number(room.price).toLocaleString()}
+                    {Number(room.price).toLocaleString('id-ID')}
                   </p>
-                  <div className="d-flex justify-content-between">
+                  {/* Tombol di bawah */}
+                  <div className="mt-auto d-flex justify-content-between">
                     <button
-                      className="btn btn-outline-warning btn-sm"
+                      className="btn btn-outline-primary btn-sm" // Outline Primary
                       data-bs-toggle="modal"
                       data-bs-target="#editRoomModal"
                       onClick={() => setEditRoom(room)}
+                      title="Edit Room"
                     >
-                      <i className="bi bi-pencil-square me-1"></i>Edit
+                      <i className="bi bi-pencil-square"></i> Edit
                     </button>
                     <button
                       className="btn btn-outline-danger btn-sm"
                       onClick={() => handleDelete(room.id)}
+                      title="Delete Room"
                     >
-                      <i className="bi bi-trash me-1"></i>Delete
+                      <i className="bi bi-trash"></i> Delete
                     </button>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="col-12">
+                <div className="alert alert-secondary text-center">No rooms found. Click 'Add Room' to create one.</div>
+            </div>
+          )}
         </div>
 
         {/* Add Room Modal */}
-        <div
-          className="modal fade"
-          id="addRoomModal"
-          tabIndex="-1"
-          aria-hidden="true"
-        >
+        <div className="modal fade" id="addRoomModal" tabIndex="-1" aria-hidden="true">
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content rounded-4 shadow">
-              <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold">Add Room</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                ></button>
+               {/* Header bg-primary */}
+              <div className="modal-header bg-primary text-dark border-0">
+                <h5 className="modal-title fw-bold">Add New Room</h5>
+                <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div className="modal-body">
-                <div className="form-floating mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="roomNumber"
+                {/* ... form inputs (gunakan mb-3 untuk margin) ... */}
+                <div className="mb-3">
+                  <label htmlFor="roomNumber" className="form-label">Room Number</label>
+                  <input type="text" className="form-control" id="roomNumber"
                     placeholder="Room Number"
                     value={newRoom.roomNumber}
                     onChange={(e) =>
                       setNewRoom({ ...newRoom, roomNumber: e.target.value })
                     }
                   />
-                  <label htmlFor="roomNumber">Room Number</label>
                 </div>
 
-                <div className="form-floating mb-3">
-                  <select
-                    className="form-select"
-                    id="roomType"
+                <div className="mb-3">
+                    <label htmlFor="roomType" className="form-label">Room Type</label>
+                    <select className="form-select" id="roomType"
                     value={newRoom.type}
                     onChange={(e) =>
                       setNewRoom({ ...newRoom, type: e.target.value })
                     }
                   >
-                    <option value="">-- Select Type --</option>
+                    <option value="" disabled>-- Select Type --</option>
                           <option value="FBK">BOUTIQUE</option>
                           <option value="FSKG">SS KING</option>
                           <option value="FSST">SS TWIN</option>
                           <option value="DXQ">DXQ</option>
                   </select>
-                  <label htmlFor="roomType">Room Type</label>
                 </div>
 
-                <div className="form-floating mb-3">
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="price"
+                <div className="mb-3">
+                  <label htmlFor="price" className="form-label">Price</label>
+                  <input type="number" className="form-control" id="price"
                     placeholder="Price"
                     value={newRoom.price}
                     onChange={(e) =>
                       setNewRoom({ ...newRoom, price: e.target.value })
                     }
                   />
-                  <label htmlFor="price">Price</label>
                 </div>
 
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    id="status"
+                <div className="mb-3">
+                    <label htmlFor="status" className="form-label">Status</label>
+                    <select className="form-select" id="status"
                     value={newRoom.status}
                     onChange={(e) =>
                       setNewRoom({ ...newRoom, status: e.target.value })
@@ -214,19 +215,18 @@ const RoomList = () => {
                   >
                     <option value="VCI">VCI - Vacant Clean Inspected</option>
                     <option value="VCN">VCN - Vacant Clean Not inspected</option>
-                    <option value="OCCUPIED">OCCUPIED</option>
+                {/* <option value="OCCUPIED">OCCUPIED</option> Occupied tidak bisa diset manual saat create */}
                     <option value="VDN">VDN - Vacant Dirty</option>
                     <option value="OOO">OOO - Out of Order</option>
                   </select>
-                  <label htmlFor="status">Status</label>
                 </div>
               </div>
               <div className="modal-footer border-0">
-                <button className="btn btn-light" data-bs-dismiss="modal">
+                <button className="btn btn-secondary" data-bs-dismiss="modal">
                   Cancel
                 </button>
                 <button className="btn btn-primary" onClick={handleCreate}>
-                  Save Room
+                 <i className="bi bi-save me-1"></i> Save Room
                 </button>
               </div>
             </div>
@@ -234,31 +234,23 @@ const RoomList = () => {
         </div>
 
         {/* Edit Room Modal */}
-        <div
-          className="modal fade"
-          id="editRoomModal"
-          tabIndex="-1"
-          aria-hidden="true"
-        >
+        <div className="modal fade" id="editRoomModal" tabIndex="-1" aria-hidden="true">
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content rounded-4 shadow">
-              <div className="modal-header border-0">
-                <h5 className="modal-title fw-bold">Edit Room</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                ></button>
+              <div className="modal-header bg-primary text-dark border-0"> {/* Disesuaikan */}
+                <h5 className="modal-title fw-bold">Edit Room {editRoom?.roomNumber}</h5>
+                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               {editRoom && (
                 <>
                   <div className="modal-body">
-                    <div className="form-floating mb-3">
+                     {/* Form Edit Room */}
+                    <div className="mb-3">
+                      <label htmlFor="editRoomNumber" className="form-label">Room Number</label>
                       <input
                         type="text"
                         className="form-control"
                         id="editRoomNumber"
-                        placeholder="Room Number"
                         value={editRoom.roomNumber}
                         onChange={(e) =>
                           setEditRoom({
@@ -267,10 +259,9 @@ const RoomList = () => {
                           })
                         }
                       />
-                      <label htmlFor="editRoomNumber">Room Number</label>
                     </div>
-
-                    <div className="form-floating mb-3">
+                     <div className="mb-3">
+                      <label htmlFor="editRoomType" className="form-label">Room Type</label>
                       <select
                         className="form-select"
                         id="editRoomType"
@@ -279,30 +270,27 @@ const RoomList = () => {
                           setEditRoom({ ...editRoom, type: e.target.value })
                         }
                       >
-                        <option value="">-- Select Type --</option>
-                          <option value="FBK">BOUTIQUE</option>
-                          <option value="FSKG">SS KING</option>
-                          <option value="FSST">SS TWIN</option>
-                          <option value="DXQ">DXQ</option>
+                         <option value="">-- Select Type --</option>
+                         <option value="FBK">BOUTIQUE</option>
+                         <option value="FSKG">SS KING</option>
+                         <option value="FSST">SS TWIN</option>
+                         <option value="DXQ">DXQ</option>
                       </select>
-                      <label htmlFor="editRoomType">Room Type</label>
                     </div>
-
-                    <div className="form-floating mb-3">
+                     <div className="mb-3">
+                      <label htmlFor="editPrice" className="form-label">Price (Rp)</label>
                       <input
                         type="number"
                         className="form-control"
                         id="editPrice"
-                        placeholder="Price"
                         value={editRoom.price}
                         onChange={(e) =>
                           setEditRoom({ ...editRoom, price: e.target.value })
                         }
                       />
-                      <label htmlFor="editPrice">Price</label>
                     </div>
-
-                    <div className="form-floating">
+                    <div className="mb-3">
+                      <label htmlFor="editStatus" className="form-label">Status</label>
                       <select
                         className="form-select"
                         id="editStatus"
@@ -311,25 +299,20 @@ const RoomList = () => {
                           setEditRoom({ ...editRoom, status: e.target.value })
                         }
                       >
-                        <option value="VCI">
-                          VCI - Vacant Clean Inspected
-                        </option>
-                        <option value="VCN">
-                          VCN - Vacant Clean Not inspected
-                        </option>
-                        <option value="OCCUPIED">OCCUPIED</option>
-                        <option value="VDN">VDN - Vacant Dirty</option>
-                        <option value="OOO">OOO - Out of Order</option>
+                         <option value="VCI">VCI - Vacant Clean Inspected</option>
+                         <option value="VCN">VCN - Vacant Clean Not inspected</option>
+                         <option value="OCCUPIED">OCCUPIED</option> {/* Status bisa diubah ke Occupied */}
+                         <option value="VDN">VDN - Vacant Dirty</option>
+                         <option value="OOO">OOO - Out of Order</option>
                       </select>
-                      <label htmlFor="editStatus">Status</label>
                     </div>
                   </div>
                   <div className="modal-footer border-0">
-                    <button className="btn btn-light" data-bs-dismiss="modal">
+                    <button className="btn btn-secondary" data-bs-dismiss="modal">
                       Cancel
                     </button>
                     <button className="btn btn-primary" onClick={handleUpdate}>
-                      Update Room
+                      <i className="bi bi-save me-1"></i> Update Room
                     </button>
                   </div>
                 </>

@@ -1,7 +1,59 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import emailjs from '@emailjs/browser'; // 1. Impor emailjs
 
 const Contact = () => {
+  // 2. State untuk mengelola input form
+  const form = useRef();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: '',
+  });
+  
+  // 3. State untuk status pengiriman (loading, success, error)
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
+
+  // 4. Fungsi untuk menangani perubahan input
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  // 5. Fungsi untuk menangani submit form
+  const handleSubmit = (e) => {
+    e.preventDefault(); // Mencegah refresh halaman
+    setIsLoading(true);
+    setStatusMessage({ type: '', text: '' });
+
+    emailjs
+      .sendForm(
+        'service_c0on6xu',    // <-- GANTI DENGAN SERVICE ID ANDA
+        'template_5g3yj16',   // <-- GANTI DENGAN TEMPLATE ID ANDA
+        form.current,
+        'pANVfqrBVoOBTlOe0'     // <-- GANTI DENGAN PUBLIC KEY ANDA
+      )
+      .then(
+        (result) => {
+          console.log('SUCCESS!', result.text);
+          setStatusMessage({ type: 'success', text: 'Pesan berhasil terkirim!' });
+          setFormData({ name: '', email: '', subject: '', message: '' }); // Kosongkan form
+        },
+        (error) => {
+          console.log('FAILED...', error.text);
+          setStatusMessage({ type: 'error', text: 'Gagal mengirim pesan. Silakan coba lagi.' });
+        }
+      )
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
   return (
     <div className="container-xxl bg-white p-0">
       {/* navbar and hero  */}
@@ -17,8 +69,6 @@ const Contact = () => {
             <div className="navbar-nav ms-auto py-0 pe-4">
               <Link to="/" className="nav-item nav-link">Home</Link>
               <Link to="/about" className="nav-item nav-link">About</Link>
-
-              {/* Dropdown */}
               <div className="nav-item dropdown">
                 <a href="#" className="nav-link dropdown-toggle" data-bs-toggle="dropdown">Lava.</a>
                 <div className="dropdown-menu bg-light m-0">
@@ -27,12 +77,10 @@ const Contact = () => {
                   <Link to="/menu" className="dropdown-item">Menu Lava.</Link>
                 </div>
               </div>
-
               <Link to="/attraction" className="nav-item nav-link">Attraction</Link>
               <Link to="/rooms" className="nav-item nav-link">Rooms</Link>
               <Link to="/gallery" className="nav-item nav-link">Gallery</Link>
               <Link to="/contact" className="nav-item nav-link active">Contact</Link>
-
               <Link to="/login" className="nav-item nav-link">Login</Link>
             </div>
           </div>
@@ -64,7 +112,6 @@ const Contact = () => {
               <div className="row gy-4">
                 <div className="col-md-4">
                   <h5 className="section-title ff-secondary fw-normal text-start text-primary">Whatsapp</h5>
-                  {/* Menambahkan target dan rel untuk keamanan */}
                   <p><a href="https://wa.me/+628116810037" target="_blank" rel="noopener noreferrer"><i className="fa-brands fa-square-whatsapp text-primary me-2"></i>+62 811-6810-037</a></p>
                 </div>
                 <div className="col-md-4">
@@ -78,7 +125,6 @@ const Contact = () => {
               </div>
             </div>
             <div className="col-md-6 wow fadeIn" data-wow-delay="0.1s">
-              {/* Memperbaiki URL src pada iframe */}
               <iframe
                 className="position-relative rounded w-100 h-100"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.992648792225!2d95.3341353759902!3d5.55050853317768!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30403713608a2879%3A0x1035251ff1a704e6!2sFhandika%20Boutique%20Hotel!5e0!3m2!1sen!2sid!4v1695621535458!5m2!1sen!2sid"
@@ -90,37 +136,92 @@ const Contact = () => {
                 title="Google Maps Location of Fhandika Boutique Hotel"
               />
             </div>
-            {/* Menambahkan formulir kontak */}
             <div className="col-md-6">
               <div className="wow fadeInUp" data-wow-delay="0.2s">
-                <form>
+                
+                {/* 6. Hubungkan form dengan ref dan onSubmit */}
+                <form ref={form} onSubmit={handleSubmit}>
                   <div className="row g-3">
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="text" className="form-control" id="name" placeholder="Your Name" />
+                        {/* 7. Tambahkan name, value, dan onChange */}
+                        <input type="text" className="form-control" id="name" placeholder="Your Name"
+                          name="name" 
+                          value={formData.name} 
+                          onChange={handleChange} 
+                          required 
+                        />
                         <label htmlFor="name">Your Name</label>
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="form-floating">
-                        <input type="email" className="form-control" id="email" placeholder="Your Email" />
+                        <input type="email" className="form-control" id="email" placeholder="Your Email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                        />
                         <label htmlFor="email">Your Email</label>
                       </div>
                     </div>
                     <div className="col-12">
                       <div className="form-floating">
-                        <input type="text" className="form-control" id="subject" placeholder="Subject" />
+                        <input type="text" className="form-control" id="subject" placeholder="Subject"
+                          name="subject"
+                          value={formData.subject}
+                          onChange={handleChange}
+                          required
+                        />
                         <label htmlFor="subject">Subject</label>
                       </div>
                     </div>
                     <div className="col-12">
                       <div className="form-floating">
-                        <textarea className="form-control" placeholder="Leave a message here" id="message" style={{ height: "150px" }}></textarea>
+                        <textarea className="form-control" placeholder="Leave a message here" id="message" style={{ height: "150px" }}
+                          name="message"
+                          value={formData.message}
+                          onChange={handleChange}
+                          required
+                        ></textarea>
                         <label htmlFor="message">Message</label>
                       </div>
                     </div>
+                    
+                    {/* 8. Tampilkan pesan status */}
+                    {statusMessage.text && (
+                      <div className="col-12">
+                        <div 
+                          className={`
+                            alert 
+                            text-center 
+                            ${statusMessage.type === 'success' 
+                              ? 'bg-success-subtle text-success-emphasis' 
+                              : 'bg-danger-subtle text-danger-emphasis fw-semibold'}
+                          `}
+                          role="alert"
+                        >
+                          {statusMessage.type === 'success' 
+                            ? <i className="bi bi-check-circle-fill me-2"></i> 
+                            : <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                          }
+                          {statusMessage.text}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="col-12">
-                      <button className="btn btn-primary w-100 py-3" type="submit">Send Message</button>
+                      {/* 9. Atur state loading pada tombol */}
+                      <button className="btn btn-primary w-100 py-3" type="submit" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span className="ms-2">Sending...</span>
+                          </>
+                        ) : (
+                          'Send Message'
+                        )}
+                      </button>
                     </div>
                   </div>
                 </form>
@@ -133,6 +234,7 @@ const Contact = () => {
 
       {/* footer start */}
       <div id="footer">
+        {/* ... (kode footer Anda tetap sama) ... */}
         <div className="container">
           <div className="row">
             <div className="col-12">

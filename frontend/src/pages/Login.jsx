@@ -2,6 +2,7 @@
 import React, { useContext, useState } from "react";
 import { AuthContext } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import './../assets/css/Login.css';
 
 export default function Login() {
   const { login, loading } = useContext(AuthContext);
@@ -24,121 +25,73 @@ export default function Login() {
   };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        placeItems: "center",
-        height: "100vh",
-        background: "linear-gradient(135deg, #2563eb, #F6FF99, #708993)",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: 380,
-          padding: 28,
-          background: "white",
-          borderRadius: 12,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-        }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-            marginBottom: 20,
-            color: "#1e3a8a",
-            fontWeight: "600",
-          }}
-        >
-          Admin Login
-        </h2>
+    // Gunakan kelas CSS untuk background dan layout
+    <div className="login-page-background">
+      {/* Gunakan kelas CSS untuk card */}
+      <div className="login-card">
+        <form onSubmit={handleSubmit}>
+          <h2 className="text-center mb-4"> {/* Hapus inline style */}
+            Admin Login
+          </h2>
 
-        {error && (
-          <div
-            style={{
-              color: "white",
-              background: "#ef4444",
-              padding: 10,
-              borderRadius: 6,
-              marginBottom: 14,
-              fontSize: 14,
-            }}
-          >
-            {error}
+          {error && (
+            // Gunakan alert Bootstrap
+            <div className="alert alert-danger" role="alert">
+              {error}
+            </div>
+          )}
+
+          {/* Gunakan struktur form Bootstrap */}
+          <div className="mb-3">
+            <label htmlFor="loginEmail" className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              id="loginEmail"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Masukkan email Anda"
+            />
           </div>
-        )}
 
-        <label style={{ display: "block", marginBottom: 6, fontWeight: 500 }}>
-          Email
-        </label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            marginBottom: 14,
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            fontSize: 14,
-          }}
-        />
+          <div className="mb-4">
+            <label htmlFor="loginPassword" className="form-label">Password</label>
+            <input
+              type="password"
+              className="form-control"
+              id="loginPassword"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Masukkan password"
+            />
+          </div>
 
-        <label style={{ display: "block", marginBottom: 6, fontWeight: 500 }}>
-          Password
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            marginBottom: 20,
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            fontSize: 14,
-          }}
-        />
+          <button
+            type="submit"
+            // Gunakan kelas btn-primary
+            className="btn btn-primary w-100 mb-3"
+            disabled={loading}
+          >
+            {loading ? (
+               <>
+                 <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                 <span className="ms-2">Loading...</span>
+               </>
+               ) : "Login"}
+          </button>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 12,
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontWeight: 500,
-            marginBottom: 12,
-          }}
-        >
-          {loading ? "Loading..." : "Login"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          style={{
-            width: "100%",
-            padding: 10,
-            background: "#f3f4f6",
-            color: "#374151",
-            border: "1px solid #d1d5db",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontWeight: 500,
-          }}
-        >
-          ← Kembali ke Home
-        </button>
-      </form>
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            // Gunakan kelas btn-outline-secondary
+            className="btn btn-outline-secondary w-100"
+          >
+            ← Kembali ke Home
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,43 +1,122 @@
-/* frontend/src/pages/landingpage/PaymentFinish.css */
-
+/* frontend/src/assets/css/PaymentFinish.css */
 .payment-finish-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 80vh;
-    background-color: #f4f7f6;
+    min-height: 80vh; /* Sesuaikan tinggi */
+    background-color: var(--light); /* Latar belakang dari tema */
     padding: 20px;
+    font-family: var(--bs-body-font-family); /* Font dari tema */
 }
 
 .payment-card {
     background-color: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 30px 40px; /* Sesuaikan padding */
+    border-radius: 8px; /* Rounded corner */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Shadow halus */
     text-align: center;
-    max-width: 500px;
+    max-width: 550px;
     width: 100%;
-    border-top: 8px solid;
+    border-top: 5px solid; /* Border atas sebagai indikator */
 }
 
-.payment-card-success { border-color: #28a745; }
-.payment-card-pending { border-color: #ffc107; }
-.payment-card-error { border-color: #dc3545; }
+/* Warna border berdasarkan status */
+.payment-card-success { border-color: #198754; } /* Bootstrap success color */
+.payment-card-pending { border-color: var(--primary); } /* Warna primer tema */
+.payment-card-error { border-color: #dc3545; } /* Bootstrap danger color */
+.payment-card-loading { border-color: var(--secondary); } /* Warna sekunder tema */
+
 
 .payment-icon {
-    font-size: 5rem;
+    font-size: 3.5rem; /* Ukuran ikon */
     line-height: 1;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+/* Warna ikon spesifik (opsional, bisa juga dari teks) */
+.payment-card-success .payment-icon { color: #198754; }
+.payment-card-pending .payment-icon { color: var(--primary); }
+.payment-card-error .payment-icon { color: #dc3545; }
+.payment-card-loading .payment-icon .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: var(--primary); /* Spinner warna primer */
 }
 
+
 .payment-title {
-    font-size: 2.5rem;
+    font-size: 1.8rem; /* Ukuran judul */
     font-weight: 700;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    color: var(--darker); /* Warna teks gelap */
 }
 
 .payment-text {
-    font-size: 1.1rem;
-    color: #555;
+    font-size: 1rem; /* Ukuran teks */
+    color: var(--dark); /* Warna teks abu-abu */
     line-height: 1.6;
+    margin-bottom: 25px; /* Jarak sebelum detail/tombol */
+}
+
+/* Detail Booking */
+.booking-details-summary {
+    border-top: 1px solid #eee;
+    margin-top: 25px;
+    padding-top: 25px;
+    text-align: left; /* Detail rata kiri */
+}
+.booking-details-summary h5.text-muted {
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: var(--dark) !important;
+    font-size: 1.1rem;
+    text-align: center; /* Judul detail rata tengah */
+}
+ .booking-details-summary .list-group-item {
+     background-color: transparent;
+     border: none;
+     padding: 6px 0; /* Padding lebih kecil */
+     font-size: 0.95rem;
+     display: flex; /* Tambahkan flexbox */
+     justify-content: space-between; /* Untuk mendorong strong ke kanan */
+ }
+  .booking-details-summary .list-group-item span {
+     color: var(--dark); /* Label abu-abu */
+     /* Hapus width agar fleksibel */
+     margin-right: 15px; /* Beri jarak antara label dan value */
+  }
+  .booking-details-summary .list-group-item strong {
+     color: var(--darker); /* Value lebih gelap */
+     text-align: right; /* Pastikan value rata kanan */
+     white-space: nowrap; /* Mencegah value turun baris jika terlalu panjang */
+     overflow: hidden; /* Sembunyikan jika terlalu panjang */
+     text-overflow: ellipsis; /* Tampilkan ... jika terlalu panjang */
+  }
+  .booking-details-summary .list-group-item.bg-light {
+      background-color: #f8f9fa !important;
+      padding: 10px 15px; /* Padding untuk total */
+      margin-top: 10px;
+      border-radius: 4px;
+      /* display: flex; sudah ada dari .list-group-item */
+      justify-content: space-between;
+      align-items: center;
+  }
+  .booking-details-summary .list-group-item.bg-light h6,
+  .booking-details-summary .list-group-item.bg-light h5 {
+      margin-bottom: 0;
+  }
+
+/* Tombol */
+.payment-finish-container .btn {
+   padding: 10px 25px; /* Padding tombol */
+   font-weight: 600; /* Font weight tombol */
+   font-size: 0.9rem;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+}
+.payment-finish-container .button-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Jarak antar tombol */
+    margin-top: 30px; /* Jarak dari atas */
 }

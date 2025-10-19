@@ -14,6 +14,19 @@ import gallery7 from '/src/assets/img/gallery/7.jpg';
 import gallery8 from '/src/assets/img/gallery/8.jpg';
 import api from "../../api";
 
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 const Gallery = () => {
 
   // ==================================================================
@@ -44,49 +57,97 @@ const Gallery = () => {
   // ==================================================================
   // 3. ISOTOPE & EMBED LOGIC
   // ==================================================================
+  // EFEK 1: Inisialisasi Isotope dan muat skrip (Hanya sekali saat mount)
   useEffect(() => {
+    // Muat skrip eksternal
     if (!document.getElementById("instgrm-script")) {
       const s = document.createElement("script");
       s.id = "instgrm-script"; s.src = "https://www.instagram.com/embed.js"; s.async = true;
       document.body.appendChild(s);
     }
-    if (!document.getElementById("tiktok-embed-script")) {
-      const s = document.createElement("script");
-      s.id = "tiktok-embed-script"; s.src = "https://www.tiktok.com/embed.js"; s.async = true;
-      document.body.appendChild(s);
-    }
 
-    if (!iso.current && isotopeContainer.current) {
+    // Inisialisasi Isotope
+    if (isotopeContainer.current && !iso.current) {
       iso.current = new Isotope(isotopeContainer.current, {
         itemSelector: ".portfolio-item",
         layoutMode: "fitRows",
       });
     }
 
-    if (!isLoading && iso.current) {
-      if (window.instgrm) {
-        window.instgrm.Embeds.process();
-      }
-      iso.current.reloadItems();
-      iso.current.arrange({ filter: filterKey });
-    }
-
+    // Cleanup saat unmount
     return () => {
       if (iso.current) {
-        iso.current.destroy();
+        try {
+          iso.current.destroy();
+        } catch (e) {
+          console.warn("Isotope destroy failed:", e);
+        }
         iso.current = null;
       }
     };
-  }, [isLoading]);
+  }, []); // <-- Array dependensi kosong, hanya jalan sekali
+
+  // EFEK 2: Proses embed dan relayout saat data siap
+  useEffect(() => {
+    if (isLoading) return; // Jangan lakukan apa-apa jika masih loading
+    if (!iso.current) return; // Jangan lakukan apa-apa jika Isotope belum siap
+
+    // 1. Panggil proses embed untuk memulai pemuatan
+    if (window.instgrm) {
+      window.instgrm.Embeds.process();
+    }
+
+    // 2. Segera jalankan layout awal
+    // Ini akan menempatkan item berdasarkan minHeight (450px)
+    iso.current.reloadItems();
+    iso.current.arrange({ filter: filterKey });
+
+    // 3. --- PERBAIKAN UTAMA dengan ResizeObserver ---
+    
+    // Buat handler layout yang sudah di-debounce
+    const debouncedLayout = debounce(() => {
+      if (iso.current) {
+        console.log("Resize detected, running Isotope layout...");
+        iso.current.layout();
+      }
+    }, 150); // Jeda 150ms
+
+    // Buat observer yang memanggil handler di atas
+    const observer = new ResizeObserver(debouncedLayout);
+
+    // Ambil semua item yang dinamis (Instagram & TikTok)
+    const dynamicItems = isotopeContainer.current.querySelectorAll('.portfolio-item.third');
+    
+    // Perintahkan observer untuk "mengawasi" setiap item
+    dynamicItems.forEach(item => {
+      observer.observe(item);
+    });
+
+    // 4. Cleanup
+    return () => {
+      observer.disconnect(); // Berhenti mengawasi saat komponen dibongkar
+    }
+    
+  }, [isLoading, filterKey]); // Tetap jalankan saat isLoading berubah
 
   // ==================================================================
   // 4. FILTERING LOGIC
   // ==================================================================
+
+  // EFEK 3: Menangani perubahan filter
   useEffect(() => {
-    if (iso.current) {
-      iso.current.arrange({ filter: filterKey });
-    }
-  }, [filterKey]);
+    if (!iso.current || isLoading) return; // Jangan filter jika belum siap
+
+    // Jeda singkat untuk transisi yang lebih mulus
+    const filterTimeout = setTimeout(() => {
+        if (iso.current) {
+            iso.current.arrange({ filter: filterKey });
+        }
+    }, 300);
+
+    return () => clearTimeout(filterTimeout);
+
+  }, [filterKey]); // <-- Hanya bergantung pada filterKey
 
   // Helper function & style
   const blockquoteStyle = {
@@ -94,6 +155,7 @@ const Gallery = () => {
     boxShadow: "0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15)",
     margin: "1px", maxWidth: "540px", minWidth: "326px", padding: 0,
     width: "calc(100% - 2px)",
+    minHeight: "500px",
   };
 
   const getTiktokId = (url) => {
@@ -151,7 +213,7 @@ const Gallery = () => {
       {/* navbar and hero end */}
 
       {/* Projects Start */}
-      <div className="container-xxl py-5">
+      <div className="container-xxl py-5 gallery-content-wrapper">
         <div className="container">
           <div className="text-center mx-auto wow fadeInUp max-w-96" data-wow-delay="0.1s" >
             <h1 className="mb-3 fw-bold text-primary">Gallery</h1>
@@ -177,7 +239,7 @@ const Gallery = () => {
           </div>
 
           {/* Gallery start*/}
-          <div ref={isotopeContainer} className="row g-4 portfolio-container">
+          <div ref={isotopeContainer} className="row g-4 portfolio-container" style={{ minHeight: '100vh' }}>
             {/* 2. Gunakan variabel gambar yang diimpor untuk src dan href */}
             <div className="col-lg-4 col-md-6 portfolio-item first wow fadeInUp" data-wow-delay="0.1s">
               <div className="portfolio-inner rounded">
@@ -294,16 +356,17 @@ const Gallery = () => {
                 );
               }
               if (item.platform === "tiktok") {
+                const videoId = getTiktokId(item.link);
                 return (
                   <div key={item.id} className="col-lg-4 col-md-6 portfolio-item third wow fadeInUp" data-wow-delay="0.1s">
-                    <blockquote
-                      className="tiktok-embed"
-                      cite={item.link}
-                      data-video-id={getTiktokId(item.link)}
-                      style={{ ...blockquoteStyle, minHeight: '500px' }}
+                    <iframe
+                      title={`TikTok post ${item.id}`}
+                      src={`https://www.tiktok.com/embed/v2/${videoId}?autoplay=0&lang=en-US`}
+                      style={blockquoteStyle} // Kita gunakan style yang sama
+                      allowFullScreen
+                      loading="lazy"
                     >
-                      <section></section>
-                    </blockquote>
+                    </iframe>
                   </div>
                 );
               }

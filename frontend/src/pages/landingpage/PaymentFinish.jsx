@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
-import './../../assets/css/PaymentFinish.css'; // Kita akan buat file CSS ini
+import './../../assets/css/PaymentFinish.css'; 
+import ConfirmationDialog from '../../components/ConfirmationDialog';
 
 const formatCurrency = (amount) => {
   if (!amount) return 'Rp 0';
@@ -49,12 +50,15 @@ const PaymentFinish = () => {
 
     // === TAMBAHKAN STATE BARU UNTUK PEMBATALAN ===
     const [isCancelling, setIsCancelling] = useState(false);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [message, setMessage] = useState({ text: null, type: 'info' });
 
     // === FUNGSI BARU UNTUK MEMBUKA KEMBALI POPUP MIDTRANS ===
     const handleResumePayment = async() => {
+        setMessage({ text: null, type: 'info' });
         // Pastikan detail booking dan token pembayaran sudah ada
         if (!bookingDetails || !bookingDetails.bookingCode) {
-            alert("Detail pesanan tidak ditemukan. Silakan muat ulang halaman.");
+            setMessage({ text: "Detail pesanan tidak ditemukan. Silakan muat ulang halaman.", type: 'error' });
             return;
         }
 
@@ -74,22 +78,27 @@ const PaymentFinish = () => {
                     onSuccess: function (result) {
                         console.log('Pembayaran Sukses:', result);
                         // Redirect ke halaman finish dengan status baru
-                        navigate(`/payment-finish?order_id=${bookingDetails.bookingCode}&status=success`);
-                        window.location.reload(); // Reload untuk data terbaru
+                        setMessage({ text: 'Pembayaran Berhasil! Memuat ulang...', type: 'success' });
+                        setTimeout(() => {
+                           navigate(`/payment-finish?order_id=${bookingDetails.bookingCode}&status=success`);
+                           window.location.reload();
+                        }, 1500);
                     },
                     onPending: function (result) {
                         console.log('Pembayaran Pending:', result);
-                        alert('Pembayaran Anda masih tertunda.');
-                        window.location.reload();
+                        setMessage({ text: 'Pembayaran Anda masih tertunda. Halaman akan dimuat ulang.', type: 'info' });
+                        // =================
+                        setTimeout(() => window.location.reload(), 1500);
                     },
                     onError: function (result) {
                         console.log('Pembayaran Gagal:', result);
-                        alert('Pembayaran Gagal.');
-                        window.location.reload();
+                        setMessage({ text: 'Pembayaran Gagal. Halaman akan dimuat ulang.', type: 'error' });
+                         // =================
+                        setTimeout(() => window.location.reload(), 1500);
                     },
                     onClose: function () {
                         console.log('Anda menutup jendela pembayaran');
-                        alert('Anda menutup jendela pembayaran sebelum transaksi selesai.');
+                        setMessage({ text: 'Anda menutup jendela pembayaran sebelum transaksi selesai.', type: 'warning' });
                     }
                 });
             } else {
@@ -106,17 +115,53 @@ const PaymentFinish = () => {
                 console.error("Status Error dari Backend:", error.response.status);
             }
             
-            alert("Gagal memuat ulang sesi pembayaran. Cek konsol browser (F12) untuk detail.");
+            setMessage({ text: "Gagal memuat ulang sesi pembayaran. Silakan coba lagi nanti.", type: 'error' });
             // ===================================================
         } finally {
             setIsRegenerating(false); // Selesai loading
         }
     };
 
+    // Fungsi yang dipanggil tombol "Batalkan Pesanan"
+    const handleCancelBookingClick = () => {
+        setMessage({ text: null, type: 'info' }); // Reset pesan error/sukses sebelumnya
+         // Validasi awal
+        if (!bookingDetails || !bookingDetails.id) {
+            setMessage({ text: "Detail pesanan tidak ditemukan untuk dibatalkan.", type: 'error' });
+            return;
+        }
+        setShowCancelConfirm(true); // <-- Tampilkan modal konfirmasi
+    };
+
+    // Fungsi yang dijalankan JIKA pengguna konfirmasi di modal
+    const executeCancellation = async () => {
+        // Logika pembatalan dipindahkan ke sini
+        setIsCancelling(true);
+        try {
+            const response = await api.post(`/api/booking/cancel/${bookingDetails.id}`);
+            setMessage({ text: response.data.message || "Pesanan telah berhasil dibatalkan.", type: 'success' });
+
+            // Update status utama halaman
+            setPaymentStatus({
+                status: 'error',
+                message: 'Pesanan telah dibatalkan oleh Anda.',
+                orderId: bookingDetails.bookingCode
+            });
+            setBookingDetails(response.data.booking);
+
+        } catch (error) {
+             console.error("Gagal membatalkan pesanan:", error);
+             setMessage({ text: "Gagal membatalkan pesanan: " + (error.response?.data?.message || error.message), type: 'error' });
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
     // === FUNGSI BARU UNTUK MEMBATALKAN BOOKING ===
     const handleCancelBooking = async () => {
+        setMessage({ text: null, type: 'info' }); // Reset pesan
         if (!bookingDetails || !bookingDetails.id) {
-            alert("Detail pesanan tidak ditemukan.");
+            setMessage({ text: "Detail pesanan tidak ditemukan.", type: 'error' });
             return;
         }
 
@@ -131,8 +176,7 @@ const PaymentFinish = () => {
             const response = await api.post(`/api/booking/cancel/${bookingDetails.id}`);
             
             // Tampilkan pesan sukses
-            alert(response.data.message || "Pesanan telah berhasil dibatalkan.");
-
+            setMessage({ text: response.data.message || "Pesanan telah berhasil dibatalkan.", type: 'success' });
             // Update UI
             setPaymentStatus({
                 status: 'error', // Set status ke error/gagal
@@ -144,7 +188,7 @@ const PaymentFinish = () => {
 
         } catch (error) {
             console.error("Gagal membatalkan pesanan:", error);
-            alert("Gagal membatalkan pesanan: " + (error.response?.data?.message || error.message));
+            setMessage({ text: "Gagal membatalkan pesanan: " + (error.response?.data?.message || error.message), type: 'error' });
         } finally {
             setIsCancelling(false);
         }
@@ -214,11 +258,9 @@ const PaymentFinish = () => {
     if (paymentStatus.status === 'loading') {
         return (
             <div className="payment-finish-container">
-                {/* Gunakan style netral, misal 'payment-card-pending' */}
-                <div className="payment-card payment-card-pending"> 
+                <div className="payment-card payment-card-loading"> {/* Kelas loading */}
                     <div className="payment-icon">
-                        {/* Tampilkan Bootstrap Spinner */}
-                        <div className="spinner-border text-primary" role="status">
+                        <div className="spinner-border" role="status">
                             <span className="visually-hidden">Loading...</span>
                         </div>
                     </div>
@@ -238,81 +280,138 @@ const PaymentFinish = () => {
         switch (paymentStatus.status) {
             case 'success':
                 return {
-                    icon: '✅',
-                    cardClass: 'payment-card-success',
+                    icon: '✅', // Emoji atau bisa diganti Bootstrap Icon <i className="bi bi-check-circle-fill fs-1 text-success"></i>
+                    type: 'success',
                     title: 'Pembayaran Berhasil!',
-                    text: `Terima kasih! Pesanan Anda dengan ID ${paymentStatus.orderId} telah kami terima dan akan segera diproses.`
+                    text: `Terima kasih! Pesanan Anda dengan ID ${paymentStatus.orderId} telah dikonfirmasi.`
                 };
             case 'pending':
                 return {
-                    icon: '⏳',
-                    cardClass: 'payment-card-pending',
+                    icon: '⏳', // Emoji atau <i className="bi bi-hourglass-split fs-1 text-primary"></i>
+                    type: 'warning',
                     title: 'Pembayaran Tertunda',
                     text: `Kami masih menunggu konfirmasi pembayaran untuk pesanan ${paymentStatus.orderId}. Silakan selesaikan pembayaran Anda.`
                 };
             case 'error':
             default:
                 return {
-                    icon: '❌',
-                    cardClass: 'payment-card-error',
-                    title: paymentStatus.message.includes("dibatalkan") ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal',
+                    icon: '❌', // Emoji atau <i className="bi bi-x-octagon-fill fs-1 text-danger"></i>
+                    type: 'danger',
+                    title: paymentStatus.message.includes("dibatalkan") ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal/Kadaluarsa',
                     text: `${paymentStatus.message} (ID Pesanan: ${paymentStatus.orderId})`
                 };
         }
     };
 
-    const { icon, cardClass, title, text } = getStatusInfo();
+    const { icon, type, title, text } = getStatusInfo();
 
     return (
         <div className="payment-finish-container">
-            <div className={`payment-card ${cardClass}`}>
-                <div className="payment-icon">{icon}</div>
-                <h1 className="payment-title">{title}</h1>
-                <p className="payment-text">{text}</p>
+            <div className="payment-card">
+
+{/* === TAMPILKAN PESAN ALERT KUSTOM (jika ada) === */}
+                 {message.text && (
+                    <div className={`
+                            p-3 mb-4 rounded text-center
+                            ${message.type === 'success' ? 'bg-success-subtle text-success-emphasis' : ''}
+                            ${message.type === 'error' ? 'bg-danger-subtle text-danger-emphasis fw-semibold' : ''}
+                            ${message.type === 'warning' ? 'bg-warning-subtle text-warning-emphasis fw-semibold' : ''}
+                            ${message.type === 'info' ? 'bg-primary-subtle text-primary-emphasis' : ''}
+                            position-relative small {/* Buat pesan ini lebih kecil */}
+                        `}
+                        role="alert">
+                        {/* Ikon */}
+                        {message.type === 'success' && <i className="bi bi-check-circle-fill me-2"></i>}
+                        {message.type === 'error' && <i className="bi bi-exclamation-triangle-fill me-2"></i>}
+                        {message.type === 'warning' && <i className="bi bi-exclamation-triangle-fill me-2"></i>}
+                        {message.type === 'info' && <i className="bi bi-info-circle-fill me-2"></i>}
+                        {message.text}
+                        <button type="button" className="btn-close position-absolute top-0 end-0 p-2 me-1 mt-1" onClick={() => setMessage({ text: null, type: 'info' })} aria-label="Close" style={{ fontSize: '0.65rem' }}></button>
+                    </div>
+                 )}
+
+                {/* === PESAN STATUS (GAYA BARU) === */}
+                <div className={`
+                        p-3 mb-4 rounded text-center
+                        ${type === 'success' ? 'bg-success-subtle text-success-emphasis' : ''}
+                        ${type === 'danger' ? 'bg-danger-subtle text-danger-emphasis fw-semibold' : ''}
+                        ${type === 'warning' ? 'bg-warning-subtle text-warning-emphasis fw-semibold' : ''}
+                        position-relative
+                    `}
+                    role="alert">
+
+                    {/* Ikon */}
+                    <div className="payment-icon" style={{ fontSize: '2.5rem', marginBottom: '10px' }}> {/* Perkecil ikon sedikit */}
+                        {/* Ganti emoji dengan ikon jika diinginkan */}
+                        {type === 'success' && <i className="bi bi-check-circle-fill text-success"></i>}
+                        {type === 'danger' && <i className="bi bi-x-octagon-fill text-danger"></i>}
+                        {type === 'warning' && <i className="bi bi-hourglass-split text-warning"></i>}
+                    </div>
+
+                    {/* Judul dan Teks Pesan */}
+                    <h1 className="payment-title" style={{ fontSize: '1.5rem' }}>{title}</h1> {/* Perkecil judul */}
+                    <p className="payment-text mb-0">{text}</p> {/* Hapus margin bawah teks */}
+
+                    {/* Tombol close (opsional) */}
+                    {/* <button
+                        type="button"
+                        className="btn-close position-absolute top-0 end-0 p-2 me-2 mt-1"
+                        aria-label="Close"
+                        style={{ fontSize: '0.75rem' }}
+                        // onClick={() => {}} // Mungkin tidak perlu close di halaman finish?
+                    ></button> */}
+                </div>
                 {bookingDetails && (
-                    <div className="booking-details-summary mt-4">
+                    <div className="booking-details-summary"> {/* Kelas ini masih dari PaymentFinish.css */}
                         <h5 className="text-muted">Rincian Pesanan</h5>
-                        <ul className="list-group list-group-flush text-start">
-                            <li className="list-group-item d-flex justify-content-between"><span>ID Booking</span><strong>#{bookingDetails.bookingCode}</strong></li>
-                            <li className="list-group-item d-flex justify-content-between"><span>Nama Tamu</span><strong>{bookingDetails.guestName}</strong></li>
-                            <li className="list-group-item d-flex justify-content-between"><span>Tipe Kamar</span><strong>{getRoomTypeName(bookingDetails.roomType)}</strong></li>
-                            <li className="list-group-item d-flex justify-content-between"><span>Check-in</span><strong>{formatDate(bookingDetails.checkIn)}</strong></li>
-                            <li className="list-group-item d-flex justify-content-between"><span>Check-out</span><strong>{formatDate(bookingDetails.checkOut)}</strong></li>
-                            <li className="list-group-item d-flex justify-content-between align-items-center bg-light"><h6 className="mb-0">Total Pembayaran</h6><h5 className="mb-0 fw-bold text-primary">{formatCurrency(bookingDetails.total)}</h5></li>
+                        <ul className="list-group list-group-flush">
+                            <li className="list-group-item"><span>ID Booking</span><strong>#{bookingDetails.bookingCode}</strong></li>
+                            <li className="list-group-item"><span>Nama Tamu</span><strong>{bookingDetails.guestName}</strong></li>
+                            <li className="list-group-item"><span>Tipe Kamar</span><strong>{getRoomTypeName(bookingDetails.roomType)}</strong></li>
+                            <li className="list-group-item"><span>Check-in</span><strong>{formatDate(bookingDetails.checkIn)}</strong></li>
+                            <li className="list-group-item"><span>Check-out</span><strong>{formatDate(bookingDetails.checkOut)}</strong></li>
+                            <li className="list-group-item bg-light">
+                                <h6 className="mb-0 fw-bold">Total Pembayaran</h6>
+                                <h5 className="mb-0 fw-bold text-primary">{formatCurrency(bookingDetails.total)}</h5>
+                            </li>
                         </ul>
                     </div>
                 )}
 
-                <div className="d-flex justify-content-center align-items-center gap-3 mt-4">
+                {/* Tombol Aksi (di luar kotak pesan status) */}
+                <div className="button-group"> {/* Kelas ini masih dari PaymentFinish.css */}
                     {paymentStatus.status === 'pending' ? (
-                        // === PERBARUI BLOK INI ===
                         <>
-                            <button 
-                                onClick={handleResumePayment} 
-                                className="btn btn-warning fw-bold" 
-                                disabled={isRegenerating || isCancelling} // Disable saat salah satu proses jalan
-                            > 
-                                {isRegenerating ? 'Memuat...' : 'Lanjutkan Pembayaran'} 
-                            </button>
-                            
-                            {/* === TOMBOL BATALKAN YANG BARU === */}
-                            <button 
-                                onClick={handleCancelBooking} 
-                                className="btn btn-danger" 
-                                disabled={isRegenerating || isCancelling} // Disable saat salah satu proses jalan
+                            <button
+                                onClick={handleResumePayment}
+                                className="btn btn-primary fw-bold"
+                                disabled={isRegenerating || isCancelling}
                             >
-                                {isCancelling ? 'Membatalkan...' : 'Batalkan Pesanan'}
+                                {isRegenerating ? (<><span className="spinner-border spinner-border-sm me-1"></span> Memuat...</>) : (<><i className="bi bi-credit-card me-1"></i> Lanjutkan Bayar</>)}
+                            </button>
+                            <button
+                                onClick={handleCancelBookingClick}
+                                className="btn btn-outline-danger"
+                                disabled={isRegenerating || isCancelling}
+                            >
+                                {isCancelling ? (<><span className="spinner-border spinner-border-sm me-1"></span> Batal...</>) : (<><i className="bi bi-x-circle me-1"></i> Batalkan</>)}
                             </button>
                         </>
-                        // === AKHIR PERUBAHAN ===
                     ) : (
                         <>
-                            <Link to="/" className="btn btn-primary"> Kembali ke Halaman Utama </Link>
-                            <Link to="/rooms/booking" className="btn btn-secondary"> Booking Kamar Lagi </Link>
+                            <Link to="/" className="btn btn-primary"> <i className="bi bi-house-door me-1"></i> Ke Home </Link>
+                            <Link to="/rooms/booking" className="btn btn-outline-secondary"> <i className="bi bi-calendar-plus me-1"></i> Booking Lagi </Link>
                         </>
                     )}
                 </div>
             </div>
+            <ConfirmationDialog
+                show={showCancelConfirm}
+                onClose={() => setShowCancelConfirm(false)}
+                onConfirm={executeCancellation}
+                title="Konfirmasi Pembatalan"
+                message="Apakah Anda yakin ingin membatalkan pesanan ini?"
+            />
         </div>
     );
 };
