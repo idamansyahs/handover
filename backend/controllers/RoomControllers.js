@@ -9,8 +9,38 @@ const ROOM_STATUS = ["VCN", "VCI", "OCCUPIED", "VDN", "OOO"];
 
 export const getRooms = async (req, res) => {
   try {
-    const rooms = await prisma.room.findMany({ orderBy: { roomNumber: "asc" } });
-    res.json(rooms);
+    // 1. Ambil data kamar DAN data booking terkaitnya
+    const roomsWithBookings = await prisma.room.findMany({
+      orderBy: { roomNumber: "asc" },
+      include: {
+        bookings: { // Sertakan relasi 'bookings'
+          where: {
+            status: { in: ["CONFIRMED", "CHECKED_IN"] } // Hanya booking yang aktif
+          },
+          select: { // Hanya perlu tahu apakah ada atau tidak
+            id: true
+          }
+        }
+      }
+    });
+
+    // 2. Proses data untuk menambahkan properti hasActiveBooking
+    const rooms = roomsWithBookings.map(room => {
+      // Cek apakah array bookings memiliki isi (lebih dari 0)
+      const hasActiveBooking = room.bookings.length > 0;
+
+      // Hapus properti bookings asli agar tidak dikirim ke frontend
+      const { bookings, ...roomData } = room; 
+
+      // Kembalikan data kamar + properti baru
+      return {
+        ...roomData,
+        hasActiveBooking // Tambahkan properti boolean
+      };
+    });
+
+    res.json(rooms); // Kirim data yang sudah diproses
+
   } catch (err) {
     console.error("getRooms:", err);
     res.status(500).json({ error: "Gagal mengambil daftar kamar" });
@@ -33,7 +63,6 @@ export const createRoom = async (req, res) => {
   try {
     const { roomNumber, type, price, status } = req.body;
 
-    // basic validation
     if (!roomNumber || !type || price == null) {
       return res.status(400).json({ error: "roomNumber, type dan price wajib diisi" });
     }
@@ -56,7 +85,6 @@ export const createRoom = async (req, res) => {
     res.status(201).json(created);
   } catch (err) {
     console.error("createRoom:", err);
-    // handle unique constraint error (roomNumber)
     if (err.code === "P2002") {
       return res.status(400).json({ error: "roomNumber sudah ada" });
     }
@@ -74,6 +102,22 @@ export const updateRoom = async (req, res) => {
     }
     if (status && !ROOM_STATUS.includes(status)) {
       return res.status(400).json({ error: `status invalid. Pilih salah satu: ${ROOM_STATUS.join(", ")}` });
+    }
+
+    // PERBAIKAN: Validasi logika bisnis (sama seperti di updateRoomStatus)
+    if (status) {
+      const activeBooking = await prisma.booking.findFirst({
+        where: {
+          roomId: id,
+          status: { in: ["CONFIRMED", "CHECKED_IN"] },
+        },
+      });
+
+      if (activeBooking) {
+        return res.status(400).json({
+          error: `Tidak dapat mengubah kamar. Masih ada booking aktif (ID: ${activeBooking.id})`,
+        });
+      }
     }
 
     const updated = await prisma.room.update({
@@ -103,6 +147,22 @@ export const updateRoomStatus = async (req, res) => {
       return res.status(400).json({ error: `status invalid. Pilih salah satu: ${ROOM_STATUS.join(", ")}` });
     }
 
+    // PERBAIKAN: Validasi logika bisnis
+    // Cek apakah ada booking yang sedang CONFIRMED atau CHECKED_IN di kamar ini.
+    // Jika ada, status kamar tidak boleh diubah secara manual.
+    const activeBooking = await prisma.booking.findFirst({
+      where: {
+        roomId: id,
+        status: { in: ["CONFIRMED", "CHECKED_IN"] },
+      },
+    });
+
+    if (activeBooking) {
+      return res.status(400).json({
+        error: `Tidak dapat mengubah status kamar. Masih ada booking aktif (ID: ${activeBooking.id})`,
+      });
+    }
+
     const updated = await prisma.room.update({
       where: { id },
       data: { status },
@@ -119,6 +179,19 @@ export const updateRoomStatus = async (req, res) => {
 export const deleteRoom = async (req, res) => {
   try {
     const id = Number(req.params.id);
+
+    // PERBAIKAN: Validasi logika bisnis
+    // Cek apakah kamar ini memiliki booking terkait.
+    const existingBookings = await prisma.booking.count({
+      where: { roomId: id },
+    });
+
+    if (existingBookings > 0) {
+      return res.status(400).json({
+        error: `Kamar tidak dapat dihapus karena memiliki ${existingBookings} riwayat booking.`,
+      });
+    }
+
     await prisma.room.delete({ where: { id } });
     res.json({ message: "Room berhasil dihapus" });
   } catch (err) {

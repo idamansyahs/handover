@@ -97,7 +97,7 @@ export default function BookingForm() {
     // --- Jika lolos pengecekan, lanjutkan proses booking ---
     setIsLoading(true);
     try {
-      const response = await api.post("http://localhost:5000/api/booking-user", formData);
+      const response = await api.post("/api/booking-user", formData);
       const newBookingId = response.data.id;
       navigate(`/rooms/booking/detail/${newBookingId}`);
     } catch (error) {

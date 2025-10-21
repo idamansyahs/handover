@@ -11,17 +11,24 @@ export const login = async (req, res) => {
 
   try {
     const user = await prisma.admin.findUnique({ where: { email } });
-    if (!user) return res.status(401).json({ message: "User not found" });
+    // PERBAIKAN: Standarisasi format error
+    if (!user) return res.status(401).json({ error: "User tidak ditemukan" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: "Wrong password" });
+    // PERBAIKAN: Standarisasi format error
+    if (!match) return res.status(401).json({ error: "Password salah" });
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({ token });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    // PERBAIKAN: Standarisasi format error
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -32,11 +39,13 @@ export const profile = async (req, res) => {
       where: { id: req.user.id },
       select: { id: true, email: true },
     });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    // PERBAIKAN: Standarisasi format error
+    if (!user) return res.status(404).json({ error: "User tidak ditemukan" });
 
     res.json(user);
   } catch (err) {
     console.error("Profile error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    // PERBAIKAN: Standarisasi format error
+    res.status(500).json({ error: "Internal server error" });
   }
 };

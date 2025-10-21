@@ -27,7 +27,7 @@ router.post('/regenerate-payment-token', regenerateToken);
 router.put("/booking-user/:id/cancel", cancelBookingUser);
 
 // TAMBAHKAN BARIS INI UNTUK MEMPERBAIKI ERROR 404
-router.post('/booking/cancel/:id', cancelBookingUser);
+// router.post('/booking/cancel/:id', cancelBookingUser);
 
 // Route untuk membuat token transaksi Midtrans
 router.post("/booking/pembayaran", createMidtransTransaction);
@@ -64,7 +64,7 @@ router.get('/available', authMiddleware, available);
  * KONTEN
  */
 router.get("/konten-user",getKonten);
-router.get("/konten-management", authMiddleware,getKonten);
+// router.get("/konten-management", authMiddleware,getKonten);
 router.get("/konten-management/:id",authMiddleware, getKontenById);
 router.post("/konten-management",authMiddleware, createKonten);
 router.put("/konten-management/:id",authMiddleware, updateKonten);

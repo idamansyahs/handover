@@ -1,9 +1,44 @@
 import React, { useEffect, useState } from "react";
 import api from "../api";
 import Layout from "../components/Layout";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+
+// Impor komponen React-Bootstrap yang diperlukan
+import { Modal, Button, Form } from "react-bootstrap"; // FloatingLabel dihapus, Form ditambah
 
 const RoomList = () => {
   const [rooms, setRooms] = useState([]);
+
+  // --- State untuk Modal ---
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState(null);
+
+  const [message, setMessage] = useState({ text: null, type: 'info' });
+
+  const handleCloseAdd = () => setShowAddModal(false);
+  const handleShowAdd = () => {
+    setNewRoom({ roomNumber: "", type: "", price: "", status: "VCI" });
+    setShowAddModal(true);
+  };
+  
+  const handleCloseEdit = () => {
+    setShowEditModal(false);
+    setEditRoom(null); 
+  };
+  const handleShowEdit = (room) => {
+    // 🔹 Cegah edit jika ada booking aktif
+    if (room.hasActiveBooking) {
+      setMessage({ text: 'Kamar ini tidak bisa diedit karena sedang digunakan dalam booking aktif.', type: 'warning' });
+      return;
+    }
+    setEditRoom(room);
+    setMessage({ text: null, type: 'info' });
+    setShowEditModal(true);
+  };
+  // -------------------------
 
   const [newRoom, setNewRoom] = useState({
     roomNumber: "",
@@ -16,16 +51,17 @@ const RoomList = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, );
+  }, []);
 
   const fetchRooms = async () => {
     try {
-      const res = await api.get("/api/room", {
+      const res = await api.get("/api/room", { // ❗ Pastikan endpoint ini mengembalikan 'hasActiveBooking'
         headers: { Authorization: `Bearer ${token}` },
       });
       setRooms(res.data);
     } catch (err) {
       console.error(err);
+      setMessage({ text: 'Gagal memuat data kamar.', type: 'error' });
     }
   };
 
@@ -34,14 +70,15 @@ const RoomList = () => {
       await api.post("/api/room", newRoom, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setNewRoom({ roomNumber: "", type: "", price: "", status: "VCI" });
-      fetchRooms();
-      const modal = window.bootstrap.Modal.getInstance(
-        document.getElementById("addRoomModal")
-      );
-      if (modal) modal.hide();
+      handleCloseAdd(); 
+      fetchRooms(); 
+      // 🔹 Tambahkan pesan sukses
+      setMessage({ text: 'Kamar berhasil ditambahkan!', type: 'success' });
     } catch (err) {
       console.error(err);
+      // 🔹 Tambahkan pesan error
+      const errorMsg = err.response?.data?.message || err.message;
+      setMessage({ text: `Gagal menambahkan kamar: ${errorMsg}`, type: 'error' });
     }
   };
 
@@ -51,275 +88,319 @@ const RoomList = () => {
       await api.put(`/api/room/${editRoom.id}`, editRoom, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      handleCloseEdit();
       fetchRooms();
-      setEditRoom(null);
-      const modal = window.bootstrap.Modal.getInstance(
-        document.getElementById("editRoomModal")
-      );
-      if (modal) modal.hide();
+      // 🔹 Tambahkan pesan sukses
+      setMessage({ text: 'Kamar berhasil diperbarui!', type: 'success' });
     } catch (err) {
       console.error(err);
+      // 🔹 Tambahkan pesan error
+      const errorMsg = err.response?.data?.message || err.message;
+      setMessage({ text: `Gagal memperbarui kamar: ${errorMsg}`, type: 'error' });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Yakin ingin menghapus room ini?")) return;
+  const handleDeleteClick = (id, hasActiveBooking) => {
+    // 🔹 Cegah hapus jika ada booking aktif
+    if (hasActiveBooking) {
+      setMessage({ text: 'Kamar ini tidak bisa dihapus karena sedang digunakan dalam booking aktif.', type: 'warning' });
+      return;
+    }
+    setRoomToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setRoomToDelete(null);
+    setShowDeleteModal(false);
+  };
+
+  const executeDelete = async () => {
+    if (!roomToDelete) return;
     try {
-      await api.delete(`/api/room/${id}`, {
+      await api.delete(`/api/room/${roomToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchRooms();
+      // 🔹 Ganti alert dengan message
+      setMessage({ text: 'Kamar berhasil dihapus!', type: 'success' });
     } catch (err) {
       console.error(err);
+      // 🔹 Ganti alert dengan message
+      const errorMsg = err.response?.data?.message || err.message;
+      setMessage({ text: `Gagal menghapus kamar: ${errorMsg}`, type: 'error' });
+    } finally {
+      handleCloseDeleteModal();
     }
   };
 
-  // Fungsi badge status dengan kontras teks
-    const getStatusBadge = (status) => {
-      const colors = {
-        OCCUPIED: "danger",   // Merah
-        VCI: "success",     // Hijau (Vacant Clean Inspected)
-        VCN: "info",        // Biru muda (Vacant Clean Not Inspected)
-        VDN: "warning",     // Kuning (Vacant Dirty Not Inspected)
-        OOO: "dark",        // Hitam/Gelap (Out of Order)
-      };
-      const textContrast = {
-         OCCUPIED: "white",
-         VCI: "white",
-         VCN: "dark",
-         VDN: "dark",
-         OOO: "white",
-      }
-      return <span className={`badge bg-${colors[status]} text-${textContrast[status]}`}>{status}</span>;
+  const getStatusBadge = (status) => {
+    const colors = {
+      OCCUPIED: "danger",
+      VCI: "success",
+      VCN: "secondary",
+      VDN: "warning",
+      OOO: "dark",
     };
+    return <span className={`badge bg-${colors[status]}`}>{status}</span>;
+  };
 
   return (
     <Layout>
-      {/* Gunakan container-fluid */}
-      <div className="container-fluid py-4">
+      <div className="container mt-5">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h1 className="h3 mb-0 fw-bold text-dark">Room Management</h1>
-          <button
-            className="btn btn-primary shadow-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#addRoomModal"
+          <h2 className="fw-bold">Room Management</h2>
+          <Button
+            variant="primary"
+            className="shadow-sm"
+            onClick={handleShowAdd}
           >
-            <i className="bi bi-plus-circle me-1"></i> Add Room
-          </button>
+            <i className="bi bi-plus-circle me-2"></i> Add Room
+          </Button>
         </div>
 
-        {/* Tampilan Card untuk Room */}
+        {message.text && (
+          <div className={`
+                alert
+                ${message.type === 'success' ? 'alert-success' : ''}
+                ${message.type === 'error' ? 'alert-danger' : ''}
+                ${message.type === 'info' ? 'alert-info' : ''}
+                alert-dismissible fade show
+             `}
+             role="alert">
+             {message.text}
+             <button
+               type="button"
+               className="btn-close"
+               onClick={() => setMessage({ text: null, type: 'info' })}
+               aria-label="Close"
+             ></button>
+          </div>
+        )}
+
         <div className="row">
-          {rooms.length > 0 ? rooms.map((room) => (
-            <div key={room.id} className="col-sm-6 col-md-4 col-lg-3 mb-4">
+          {rooms.map((room) => (
+            <div key={room.id} className="col-md-4 col-lg-3 mb-4">
               <div className="card shadow-sm border-0 rounded-3 h-100">
-                <div className="card-body d-flex flex-column">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <h5 className="card-title fw-bold mb-0 text-dark">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <h5 className="card-title fw-bold mb-0">
                       Room {room.roomNumber}
                     </h5>
                     {getStatusBadge(room.status)}
                   </div>
-                  <p className="text-muted mb-1 small">
+                  <p className="text-muted mb-1">
                     <strong>Type:</strong> {room.type}
                   </p>
-                  <p className="text-muted mb-3 small">
+                  <p className="text-muted mb-3">
                     <strong>Price:</strong> Rp{" "}
-                    {Number(room.price).toLocaleString('id-ID')}
+                    {Number(room.price).toLocaleString()}
                   </p>
-                  {/* Tombol di bawah */}
-                  <div className="mt-auto d-flex justify-content-between">
-                    <button
-                      className="btn btn-outline-primary btn-sm" // Outline Primary
-                      data-bs-toggle="modal"
-                      data-bs-target="#editRoomModal"
-                      onClick={() => setEditRoom(room)}
-                      title="Edit Room"
+                  <div className="d-flex justify-content-between">
+                    <Button
+                      variant="outline-warning"
+                      size="sm"
+                      onClick={() => handleShowEdit(room)}
+                      disabled={room.hasActiveBooking} // Menonaktifkan jika ada booking aktif
+                      title={room.hasActiveBooking ? "Tidak bisa diedit, kamar terpakai booking" : "Edit Kamar"}
                     >
-                      <i className="bi bi-pencil-square"></i> Edit
-                    </button>
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDelete(room.id)}
-                      title="Delete Room"
+                      <i className="bi bi-pencil-square me-1"></i>Edit
+                    </Button>
+                    {/* 🔹 Tambahkan prop 'disabled' dan 'title' */}
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={() => handleDeleteClick(room.id, room.hasActiveBooking)}
+                      disabled={room.hasActiveBooking} // Menonaktifkan jika ada booking aktif
+                      title={room.hasActiveBooking ? "Tidak bisa dihapus, kamar terpakai booking" : "Hapus Kamar"}
                     >
-                      <i className="bi bi-trash"></i> Delete
-                    </button>
+                      <i className="bi bi-trash me-1"></i>Delete
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-          )) : (
-            <div className="col-12">
-                <div className="alert alert-secondary text-center">No rooms found. Click 'Add Room' to create one.</div>
-            </div>
-          )}
+          ))}
         </div>
 
-        {/* Add Room Modal */}
-        <div className="modal fade" id="addRoomModal" tabIndex="-1" aria-hidden="true">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content rounded-4 shadow">
-               {/* Header bg-primary */}
-              <div className="modal-header bg-primary text-dark border-0">
-                <h5 className="modal-title fw-bold">Add New Room</h5>
-                <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div className="modal-body">
-                {/* ... form inputs (gunakan mb-3 untuk margin) ... */}
-                <div className="mb-3">
-                  <label htmlFor="roomNumber" className="form-label">Room Number</label>
-                  <input type="text" className="form-control" id="roomNumber"
-                    placeholder="Room Number"
-                    value={newRoom.roomNumber}
+        {/* Add Room Modal (Style Disesuaikan) */}
+        <Modal 
+          show={showAddModal} 
+          onHide={handleCloseAdd} 
+          centered 
+          size="lg" // 🔹 UBAH: Tambah size="lg"
+          contentClassName="shadow-lg" // 🔹 UBAH: Tambah shadow-lg
+        >
+          <Modal.Header 
+            closeButton 
+            className="bg-primary text-dark" // 🔹 UBAH: Ganti style header
+          >
+            <Modal.Title className="fw-bold">➕ Add Room</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {/* 🔹 UBAH: Ganti FloatingLabel ke Form.Group */}
+            <Form.Group className="mb-3">
+              <Form.Label>Room Number</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter room number"
+                value={newRoom.roomNumber}
+                onChange={(e) =>
+                  setNewRoom({ ...newRoom, roomNumber: e.target.value })
+                }
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Room Type</Form.Label>
+              <Form.Select
+                value={newRoom.type}
+                onChange={(e) =>
+                  setNewRoom({ ...newRoom, type: e.target.value })
+                }
+              >
+                <option value="" disabled>-- Select Type --</option>
+                <option value="FBK">BOUTIQUE</option>
+                <option value="FSKG">SS KING</option>
+                <option value="FSST">SS TWIN</option>
+                <option value="DXQ">DXQ</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Price</Form.Label>
+              <Form.Control
+                type="number"
+                placeholder="Enter price"
+                value={newRoom.price}
+                onChange={(e) =>
+                  setNewRoom({ ...newRoom, price: e.target.value })
+                }
+              />
+            </Form.Group>
+
+            <Form.Group>
+              <Form.Label>Status</Form.Label>
+              <Form.Select
+                value={newRoom.status}
+                onChange={(e) =>
+                  setNewRoom({ ...newRoom, status: e.target.value })
+                }
+              >
+                <option value="VCI">VCI - Vacant Clean Inspected</option>
+                <option value="VCN">VCN - Vacant Clean Not inspected</option>
+                <option value="VDN">VDN - Vacant Dirty</option>
+                <option value="OOO">OOO - Out of Order</option>
+              </Form.Select>
+            </Form.Group>
+
+          </Modal.Body>
+          <Modal.Footer className="border-0">
+            <Button variant="secondary" onClick={handleCloseAdd}> {/* Ganti ke secondary agar konsisten */}
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleCreate}>
+              Save Room
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Edit Room Modal (Style Disesuaikan) */}
+        <Modal 
+          show={showEditModal} 
+          onHide={handleCloseEdit} 
+          centered 
+          contentClassName="shadow-lg" // 🔹 UBAH: Tambah shadow-lg
+        >
+          <Modal.Header 
+            closeButton 
+            className="bg-primary text-dark" // 🔹 UBAH: Ganti style header
+          >
+            <Modal.Title className="fw-bold">✏️ Edit Room</Modal.Title>
+          </Modal.Header>
+          {editRoom && (
+            <>
+              <Modal.Body>
+                {/* 🔹 UBAH: Ganti FloatingLabel ke Form.Group */}
+                <Form.Group className="mb-3">
+                  <Form.Label>Room Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter room number"
+                    value={editRoom.roomNumber}
                     onChange={(e) =>
-                      setNewRoom({ ...newRoom, roomNumber: e.target.value })
+                      setEditRoom({
+                        ...editRoom,
+                        roomNumber: e.target.value,
+                      })
                     }
                   />
-                </div>
+                </Form.Group>
 
-                <div className="mb-3">
-                    <label htmlFor="roomType" className="form-label">Room Type</label>
-                    <select className="form-select" id="roomType"
-                    value={newRoom.type}
+                <Form.Group className="mb-3">
+                  <Form.Label>Room Type</Form.Label>
+                  <Form.Select
+                    value={editRoom.type}
                     onChange={(e) =>
-                      setNewRoom({ ...newRoom, type: e.target.value })
+                      setEditRoom({ ...editRoom, type: e.target.value })
                     }
                   >
-                    <option value="" disabled>-- Select Type --</option>
-                          <option value="FBK">BOUTIQUE</option>
-                          <option value="FSKG">SS KING</option>
-                          <option value="FSST">SS TWIN</option>
-                          <option value="DXQ">DXQ</option>
-                  </select>
-                </div>
+                    <option value="FBK">BOUTIQUE</option>
+                    <option value="FSKG">SS KING</option>
+                    <option value="FSST">SS TWIN</option>
+                    <option value="DXQ">DXQ</option>
+                  </Form.Select>
+                </Form.Group>
 
-                <div className="mb-3">
-                  <label htmlFor="price" className="form-label">Price</label>
-                  <input type="number" className="form-control" id="price"
-                    placeholder="Price"
-                    value={newRoom.price}
+                <Form.Group className="mb-3">
+                  <Form.Label>Price</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="Enter price"
+                    value={editRoom.price}
                     onChange={(e) =>
-                      setNewRoom({ ...newRoom, price: e.target.value })
+                      setEditRoom({ ...editRoom, price: e.target.value })
                     }
                   />
-                </div>
+                </Form.Group>
 
-                <div className="mb-3">
-                    <label htmlFor="status" className="form-label">Status</label>
-                    <select className="form-select" id="status"
-                    value={newRoom.status}
+                <Form.Group>
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    value={editRoom.status}
                     onChange={(e) =>
-                      setNewRoom({ ...newRoom, status: e.target.value })
+                      setEditRoom({ ...editRoom, status: e.target.value })
                     }
                   >
                     <option value="VCI">VCI - Vacant Clean Inspected</option>
                     <option value="VCN">VCN - Vacant Clean Not inspected</option>
-                {/* <option value="OCCUPIED">OCCUPIED</option> Occupied tidak bisa diset manual saat create */}
+                    <option value="OCCUPIED">OCCUPIED</option>
                     <option value="VDN">VDN - Vacant Dirty</option>
                     <option value="OOO">OOO - Out of Order</option>
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer border-0">
-                <button className="btn btn-secondary" data-bs-dismiss="modal">
-                  Cancel
-                </button>
-                <button className="btn btn-primary" onClick={handleCreate}>
-                 <i className="bi bi-save me-1"></i> Save Room
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                  </Form.Select>
+                </Form.Group>
 
-        {/* Edit Room Modal */}
-        <div className="modal fade" id="editRoomModal" tabIndex="-1" aria-hidden="true">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content rounded-4 shadow">
-              <div className="modal-header bg-primary text-dark border-0"> {/* Disesuaikan */}
-                <h5 className="modal-title fw-bold">Edit Room {editRoom?.roomNumber}</h5>
-                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              {editRoom && (
-                <>
-                  <div className="modal-body">
-                     {/* Form Edit Room */}
-                    <div className="mb-3">
-                      <label htmlFor="editRoomNumber" className="form-label">Room Number</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="editRoomNumber"
-                        value={editRoom.roomNumber}
-                        onChange={(e) =>
-                          setEditRoom({
-                            ...editRoom,
-                            roomNumber: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                     <div className="mb-3">
-                      <label htmlFor="editRoomType" className="form-label">Room Type</label>
-                      <select
-                        className="form-select"
-                        id="editRoomType"
-                        value={editRoom.type}
-                        onChange={(e) =>
-                          setEditRoom({ ...editRoom, type: e.target.value })
-                        }
-                      >
-                         <option value="">-- Select Type --</option>
-                         <option value="FBK">BOUTIQUE</option>
-                         <option value="FSKG">SS KING</option>
-                         <option value="FSST">SS TWIN</option>
-                         <option value="DXQ">DXQ</option>
-                      </select>
-                    </div>
-                     <div className="mb-3">
-                      <label htmlFor="editPrice" className="form-label">Price (Rp)</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        id="editPrice"
-                        value={editRoom.price}
-                        onChange={(e) =>
-                          setEditRoom({ ...editRoom, price: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor="editStatus" className="form-label">Status</label>
-                      <select
-                        className="form-select"
-                        id="editStatus"
-                        value={editRoom.status}
-                        onChange={(e) =>
-                          setEditRoom({ ...editRoom, status: e.target.value })
-                        }
-                      >
-                         <option value="VCI">VCI - Vacant Clean Inspected</option>
-                         <option value="VCN">VCN - Vacant Clean Not inspected</option>
-                         <option value="OCCUPIED">OCCUPIED</option> {/* Status bisa diubah ke Occupied */}
-                         <option value="VDN">VDN - Vacant Dirty</option>
-                         <option value="OOO">OOO - Out of Order</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="modal-footer border-0">
-                    <button className="btn btn-secondary" data-bs-dismiss="modal">
-                      Cancel
-                    </button>
-                    <button className="btn btn-primary" onClick={handleUpdate}>
-                      <i className="bi bi-save me-1"></i> Update Room
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+              </Modal.Body>
+              <Modal.Footer className="border-0">
+                <Button variant="secondary" onClick={handleCloseEdit}> {/* Ganti ke secondary agar konsisten */}
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleUpdate}>
+                  Update Room
+                </Button>
+              </Modal.Footer>
+            </>
+          )}
+        </Modal>
+        <ConfirmationDialog
+          show={showDeleteModal}
+          onClose={handleCloseDeleteModal}
+          onConfirm={executeDelete}
+          title="Konfirmasi Hapus Kamar"
+          message={`Apakah Anda yakin ingin menghapus kamar ini? Tindakan ini tidak dapat dibatalkan.`}
+          confirmText="Ya, Hapus"
+          cancelText="Batal"
+        />
       </div>
     </Layout>
   );

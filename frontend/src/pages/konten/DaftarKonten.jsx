@@ -1,52 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react'; // Tambahkan useRef
-import { Link } from 'react-router-dom';
-import { Modal } from 'bootstrap'; // <-- 1. Impor Modal Bootstrap JS
+import React, { useState, useEffect } from 'react';
+import { Modal, Button } from 'react-bootstrap'; // Gunakan React-Bootstrap
 import api from '../../api';
 import Layout from '../../components/Layout';
+import ConfirmationDialog from '../../components/ConfirmationDialog'; // Impor modal konfirmasi
 
 const DaftarKonten = () => {
-    // Ganti nama state agar konsisten
     const [kontenList, setKontenList] = useState([]);
-    // State form (sesuaikan field jika perlu)
     const [form, setForm] = useState({ id: null, link: "", deskripsi: "", platform: "" });
     const [loading, setLoading] = useState(true);
-    const [editingContentId, setEditingContentId] = useState(null); // Tandai mode edit
+    const [editingContentId, setEditingContentId] = useState(null); 
 
-    // State untuk instance modal
-    const [modalInstance, setModalInstance] = useState(null);
-    const modalElementRef = useRef(); // Ref untuk elemen modal
+    const [showFormModal, setShowFormModal] = useState(false);
+    
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [kontenToDelete, setKontenToDelete] = useState(null);
 
-    const token = localStorage.getItem('token'); // Ambil token
+    // 🔹 1. State baru untuk notifikasi (menggantikan alert)
+    const [message, setMessage] = useState({ text: null, type: 'info' });
 
-    // Inisialisasi instance modal
-    useEffect(() => {
-        if (modalElementRef.current) {
-            // Cek instance sebelum membuat baru untuk mencegah error backdrop
-            const existingInstance = Modal.getInstance(modalElementRef.current);
-            if (!existingInstance) {
-                const modal = new Modal(modalElementRef.current);
-                setModalInstance(modal);
-            } else {
-                setModalInstance(existingInstance);
-            }
-        }
-    }, []); // Hanya sekali saat mount
+    const token = localStorage.getItem('token');
 
-
-    // Fetch data konten
     useEffect(() => {
         const fetchKonten = async () => {
             setLoading(true);
             try {
-                // 2. Perbaiki Endpoint & TAMBAHKAN Header Auth
-                const res = await api.get("/api/konten-management", {
+                const res = await api.get("/api/konten-user", {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setKontenList(res.data || []);
             } catch (err) {
                 console.error("Error fetching content:", err);
-                 // Tambahkan notifikasi error jika perlu
-                 // setError("Gagal memuat data konten. Pastikan Anda sudah login.");
+                setMessage({ text: 'Gagal memuat konten.', type: 'error' });
             } finally {
                 setLoading(false);
             }
@@ -55,80 +39,94 @@ const DaftarKonten = () => {
             fetchKonten();
         } else {
              console.error("Token not found.");
+             setMessage({ text: 'Token tidak ditemukan. Silakan login kembali.', type: 'error' });
              setLoading(false);
-             // Handle jika tidak ada token (misal redirect login)
         }
-    }, [token]); // Jalankan ulang jika token berubah
+    }, [token]);
 
-    // Hapus konten (Kode ini diasumsikan sudah berfungsi, hanya ditambahkan Auth Header)
-    const deleteKonten = async (id) => {
-        if (window.confirm('Apakah anda yakin ingin menghapus konten ini?')) {
-            try {
-                // 3. TAMBAHKAN Header Auth & Perbaiki Endpoint (jika perlu)
-                await api.delete(`/api/konten-management/${id}`, { // Pastikan endpoint ini benar
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setKontenList(kontenList.filter((k) => k.id !== id));
-                alert('Konten berhasil dihapus!'); // Ganti alert jika perlu
-            } catch (err) {
-                console.error("Error deleting content:", err);
-                alert('Gagal menghapus konten: ' + (err.response?.data?.message || err.message)); // Ganti alert jika perlu
-            }
+    const handleDeleteClick = (id) => {
+        setKontenToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setKontenToDelete(null);
+        setShowDeleteModal(false);
+    };
+
+    const executeDeleteKonten = async () => {
+        if (!kontenToDelete) return;
+        try {
+            await api.delete(`/api/konten-management/${kontenToDelete}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setKontenList(kontenList.filter((k) => k.id !== kontenToDelete));
+            // 🔹 2. Ganti alert() dengan state message
+            setMessage({ text: 'Konten berhasil dihapus!', type: 'success' });
+        } catch (err) {
+            console.error("Error deleting content:", err);
+            // 🔹 2. Ganti alert() dengan state message
+            const errorMsg = err.response?.data?.message || err.message;
+            setMessage({ text: `Gagal menghapus konten: ${errorMsg}`, type: 'error' });
+        } finally {
+            handleCloseDeleteModal(); // Tetap tutup modal
         }
-    }
+    };
 
-    // Handle perubahan input form
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm((prevForm) => ({ ...prevForm, [name]: value }));
     }
 
-    // 4. Fungsi untuk MENAMPILKAN modal Tambah
     const handleShowAddModal = () => {
         setEditingContentId(null);
-        // Reset form dengan nilai default string kosong
         setForm({ id: null, link: "", deskripsi: "", platform: "" });
-        modalInstance?.show(); // Tampilkan modal via JS
+        setShowFormModal(true);
     }
 
-    // 5. Fungsi untuk MENAMPILKAN modal Edit
     const handleShowEditModal = (konten) => {
         setEditingContentId(konten.id);
-        // Isi form dengan data konten (gunakan fallback string kosong '')
         setForm({
             id: konten.id,
             link: konten.link || "",
             deskripsi: konten.deskripsi || "",
             platform: konten.platform || ""
         });
-        modalInstance?.show(); // Tampilkan modal via JS
+        setShowFormModal(true);
     }
 
-    // Submit tambah / edit konten
+    const handleCloseFormModal = () => {
+        setShowFormModal(false);
+        setEditingContentId(null);
+        setForm({ id: null, link: "", deskripsi: "", platform: "" });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const headers = { Authorization: `Bearer ${token}` }; // Siapkan header
+        const headers = { Authorization: `Bearer ${token}` }; 
+
         try {
             if (editingContentId) {
-                // UPDATE: Gunakan endpoint PUT dan sertakan header
                 await api.put(`/api/konten-management/${editingContentId}`, form, { headers });
-                alert('Konten berhasil diperbarui!');
+                // 🔹 3. Ganti alert() dengan state message
+                setMessage({ text: 'Konten berhasil diperbarui!', type: 'success' });
             } else {
-                // CREATE: Gunakan endpoint POST dan sertakan header
-                await api.post("/api/konten-management", form, { headers });
-                alert('Konten berhasil ditambahkan!');
+                const { id, ...dataToCreate } = form;
+                await api.post("/api/konten-management", dataToCreate, { headers }); 
+                // 🔹 3. Ganti alert() dengan state message
+                setMessage({ text: 'Konten berhasil ditambahkan!', type: 'success' });
             }
-            // Refresh list setelah create/update (sertakan header)
-            const res = await api.get("/api/konten-management", { headers });
-            setKontenList(res.data || []);
-            modalInstance?.hide(); // Tutup modal
-            // Reset state
-            setEditingContentId(null);
-            setForm({ id: null, link: "", deskripsi: "", platform: "" });
+
+            const res = await api.get("/api/konten-user", { headers });
+            setKontenList(res.data || []); 
+            
+            handleCloseFormModal();
 
         } catch (err) {
             console.error("Error submitting content:", err);
-            alert(`Gagal ${editingContentId ? 'memperbarui' : 'menambahkan'} konten: ` + (err.response?.data?.message || err.message));
+            // 🔹 3. Ganti alert() dengan state message
+            const errorMsg = err.response?.data?.message || err.message;
+            setMessage({ text: `Gagal menyimpan konten: ${errorMsg}`, type: 'error' });
         }
     }
 
@@ -137,7 +135,6 @@ const DaftarKonten = () => {
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h1 className="h3 mb-0 fw-bold text-dark">Manajemen Konten</h1>
-                    {/* 6. Tombol Add: Panggil handleShowAddModal, HAPUS data-bs-* */}
                     <button
                         className="btn btn-primary shadow-sm"
                         onClick={handleShowAddModal}
@@ -146,11 +143,32 @@ const DaftarKonten = () => {
                     </button>
                 </div>
 
-                {/* Loading / Error State */}
-                 {loading && <div className="text-center p-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></div>}
-                 {!loading && !token && <div className="alert alert-danger">Tidak dapat memuat konten. Token tidak ditemukan atau tidak valid.</div>}
+                {/* 🔹 4. Tampilkan state message di sini */}
+                {message.text && (
+                  <div className={`
+                        alert
+                        ${message.type === 'success' ? 'alert-success' : ''}
+                        ${message.type === 'error' ? 'alert-danger' : ''}
+                        ${message.type === 'info' ? 'alert-info' : ''}
+                        alert-dismissible fade show
+                     `}
+                     role="alert">
+                     {message.text}
+                     <button
+                       type="button"
+                       className="btn-close"
+                       onClick={() => setMessage({ text: null, type: 'info' })}
+                       aria-label="Close"
+                     ></button>
+                  </div>
+                )}
 
-                {/* Tabel Konten */}
+                {loading && <div className="text-center p-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></div>}
+                {!loading && !token && message.type === 'error' && (
+                    <div className="alert alert-danger">Tidak dapat memuat data.</div>
+                )}
+
+
                 {!loading && token && (
                     <div className="card shadow-sm mb-4">
                         <div className="card-header py-3 bg-light border-0">
@@ -176,7 +194,6 @@ const DaftarKonten = () => {
                                                 <td>{konten.platform}</td>
                                                 <td>{new Date(konten.createdAt).toLocaleString('id-ID')}</td>
                                                 <td className="text-center">
-                                                     {/* 7. Tombol Edit: Panggil handleShowEditModal, HAPUS data-bs-* */}
                                                     <button
                                                         className="btn btn-sm btn-outline-primary me-1"
                                                         onClick={() => handleShowEditModal(konten)}
@@ -184,10 +201,9 @@ const DaftarKonten = () => {
                                                     >
                                                         <i className="bi bi-pencil-square"></i>
                                                     </button>
-                                                    {/* Tombol Hapus (tidak diubah) */}
                                                     <button
                                                         className="btn btn-sm btn-outline-danger"
-                                                        onClick={() => deleteKonten(konten.id)}
+                                                        onClick={() => handleDeleteClick(konten.id)}
                                                         title="Hapus Konten"
                                                     >
                                                         <i className="bi bi-trash"></i>
@@ -207,72 +223,79 @@ const DaftarKonten = () => {
                 )}
             </div>
 
-            {/* 8. Modal Tambah/Edit (Gunakan ID yang sama: 'kontenFormModal') */}
-            <div className="modal fade" id="kontenFormModal" ref={modalElementRef} tabIndex="-1" aria-labelledby="kontenFormModalLabel" aria-hidden="true">
-                <div className="modal-dialog modal-dialog-centered">
-                    <div className="modal-content shadow-lg">
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-header bg-primary text-dark">
-                                <h5 className="modal-title fw-bold" id="kontenFormModalLabel">
-                                    {editingContentId ? '✏️ Edit Konten' : '➕ Tambah Konten Baru'}
-                                </h5>
-                                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            {/* Modal Tambah/Edit (React-Bootstrap) */}
+            <Modal show={showFormModal} onHide={handleCloseFormModal} centered>
+                {/* 🔹 Tambahkan div ini agar shadow-lg berfungsi */}
+                <div className="modal-content shadow-lg">
+                    <form onSubmit={handleSubmit}>
+                        <Modal.Header closeButton className="bg-primary text-dark">
+                            <Modal.Title className="fw-bold">
+                                {editingContentId ? '✏️ Edit Konten' : '➕ Tambah Konten Baru'}
+                            </Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            <div className="mb-3">
+                                <label htmlFor="formLink" className="form-label">Link Konten</label>
+                                <input
+                                    type="url"
+                                    name="link"
+                                    className="form-control"
+                                    id="formLink"
+                                    value={form.link || ''}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="https://"
+                                />
                             </div>
-                            <div className="modal-body">
-                                {/* Input fields bind ke state 'form' */}
-                                <div className="mb-3">
-                                    <label htmlFor="formLink" className="form-label">Link Konten</label>
-                                    <input
-                                        type="url"
-                                        name="link"
-                                        className="form-control"
-                                        id="formLink"
-                                        value={form.link || ''} // <-- 9. Fallback value
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="https://"
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label htmlFor="formDeskripsi" className="form-label">Deskripsi</label>
-                                    <textarea
-                                        name="deskripsi"
-                                        className="form-control"
-                                        id="formDeskripsi"
-                                        rows="3"
-                                        value={form.deskripsi || ''} // <-- 9. Fallback value
-                                        onChange={handleChange}
-                                    ></textarea>
-                                </div>
-                                <div className="mb-3">
-                                    <label htmlFor="formPlatform" className="form-label">Platform</label>
-                                    <select
-                                        name="platform"
-                                        className="form-select"
-                                        id="formPlatform"
-                                        value={form.platform || ''} // <-- 9. Fallback value
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="">-- Pilih --</option>
-                                        <option value="Instagram">Instagram</option>
-                                        <option value="Tiktok">Tiktok</option>
-                                        {/* Tambah platform lain jika perlu */}
-                                    </select>
-                                </div>
+                            <div className="mb-3">
+                                <label htmlFor="formDeskripsi" className="form-label">Deskripsi</label>
+                                <textarea
+                                    name="deskripsi"
+                                    className="form-control"
+                                    id="formDeskripsi"
+                                    rows="3"
+                                    value={form.deskripsi || ''}
+                                    onChange={handleChange}
+                                ></textarea>
                             </div>
-                            <div className="modal-footer border-0">
-                                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
-                                    Batal
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    {editingContentId ? 'Simpan Perubahan' : 'Tambah Konten'}
-                                </button>
+                            <div className="mb-3">
+                                <label htmlFor="formPlatform" className="form-label">Platform</label>
+                                <select
+                                    name="platform"
+                                    className="form-select"
+                                    id="formPlatform"
+                                    value={form.platform || ''}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Tiktok">Tiktok</option>
+                                </select>
                             </div>
-                        </form>
-                    </div>
+                        </Modal.Body>
+                        <Modal.Footer className="border-0">
+                            <Button variant="secondary" onClick={handleCloseFormModal}>
+                                Batal
+                            </Button>
+                            <Button type="submit" variant="primary">
+                                {editingContentId ? 'Simpan Perubahan' : 'Tambah Konten'}
+                            </Button>
+                        </Modal.Footer>
+                    </form>
                 </div>
-            </div>
+            </Modal>
+            
+            {/* Render Modal Konfirmasi Hapus */}
+            <ConfirmationDialog
+              show={showDeleteModal}
+              onClose={handleCloseDeleteModal}
+              onConfirm={executeDeleteKonten}
+              title="Konfirmasi Hapus Konten"
+              message="Apakah Anda yakin ingin menghapus konten ini?"
+              confirmText="Ya, Hapus"
+              cancelText="Batal"
+            />
         </Layout>
     )
 }

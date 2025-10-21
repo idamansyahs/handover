@@ -138,7 +138,7 @@ const PaymentFinish = () => {
         // Logika pembatalan dipindahkan ke sini
         setIsCancelling(true);
         try {
-            const response = await api.post(`/api/booking/cancel/${bookingDetails.id}`);
+            const response = await api.put(`/api/booking-user/${bookingDetails.id}/cancel`);
             setMessage({ text: response.data.message || "Pesanan telah berhasil dibatalkan.", type: 'success' });
 
             // Update status utama halaman
@@ -156,44 +156,6 @@ const PaymentFinish = () => {
             setIsCancelling(false);
         }
     };
-
-    // === FUNGSI BARU UNTUK MEMBATALKAN BOOKING ===
-    const handleCancelBooking = async () => {
-        setMessage({ text: null, type: 'info' }); // Reset pesan
-        if (!bookingDetails || !bookingDetails.id) {
-            setMessage({ text: "Detail pesanan tidak ditemukan.", type: 'error' });
-            return;
-        }
-
-        // Konfirmasi pengguna
-        if (!window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) {
-            return;
-        }
-
-        setIsCancelling(true);
-        try {
-            // Panggil API cancelBookingUser dari backend
-            const response = await api.post(`/api/booking/cancel/${bookingDetails.id}`);
-            
-            // Tampilkan pesan sukses
-            setMessage({ text: response.data.message || "Pesanan telah berhasil dibatalkan.", type: 'success' });
-            // Update UI
-            setPaymentStatus({
-                status: 'error', // Set status ke error/gagal
-                message: 'Pesanan telah dibatalkan oleh Anda.',
-                orderId: bookingDetails.bookingCode
-            });
-            // Update detail booking dengan data terbaru dari backend
-            setBookingDetails(response.data.booking);
-
-        } catch (error) {
-            console.error("Gagal membatalkan pesanan:", error);
-            setMessage({ text: "Gagal membatalkan pesanan: " + (error.response?.data?.message || error.message), type: 'error' });
-        } finally {
-            setIsCancelling(false);
-        }
-    };
-    // === AKHIR FUNGSI BARU ===
 
     useEffect(() => {
         // 1. Ambil orderId LENGKAP dari URL (misal: "FBK22-1760694479489")

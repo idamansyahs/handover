@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { /*useLocation,*/ useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api';
-import axios from 'axios';
 import ConfirmationDialog from '../../components/ConfirmationDialog';
 
 // Helper untuk format mata uang
@@ -57,7 +56,7 @@ const BookingDetail = () => {
         setMessage({ text: null, type: 'info' });
 
         try {
-            const response = await axios.post('http://localhost:5000/api/booking/pembayaran', {
+            const response = await api.post('/api/booking/pembayaran', {
                 bookingId: booking.id
             });
 
@@ -128,43 +127,6 @@ const BookingDetail = () => {
       setIsCancelling(false);
     }
   };
-  
-  // FUNGSI BARU UNTUK MEMBATALKAN BOOKING
-  // --- Modifikasi handleCancelBooking (untuk klik tombol) ---
-  const handleCancelBooking = async () => {
-    setMessage({ text: null, type: 'info' }); // Reset pesan
-    if (window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) {
-      await cancelBookingInternal(true); // Panggil fungsi internal dengan flag redirect
-    }
-  };
-
-  // === BUAT FUNGSI INTERNAL UNTUK PEMBATALAN ===
-  const cancelBookingInternal = async (redirectAfterCancel = false) => {
-    setIsCancelling(true);
-    try {
-      await api.put(`/api/booking-user/${bookingId}/cancel`);
-      // == UBAH ALERT KE SET MESSAGE ==
-      // alert("Pesanan Anda telah berhasil dibatalkan.");
-      setMessage({ text: "Pesanan Anda telah berhasil dibatalkan.", type: 'success' });
-      // =============================
-      // Redirect hanya jika dipanggil dari tombol, bukan dari onClose snap
-      if (redirectAfterCancel) {
-        setTimeout(() => navigate('/rooms/booking'), 1500); // Delay redirect
-      }
-       // Update state booking (opsional, agar tombol bayar hilang)
-       setBooking(prev => ({ ...prev, status: 'CANCELLED' }));
-
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Gagal membatalkan pesanan.";
-      // == UBAH ALERT KE SET MESSAGE ==
-      // alert(`Terjadi kesalahan: ${errorMessage}`);
-      setMessage({ text: `Gagal membatalkan pesanan: ${errorMessage}`, type: 'error' });
-      // =============================
-      console.error("Gagal membatalkan:", err);
-    } finally {
-      setIsCancelling(false);
-    }
-  }
 
   const startRedirectCountdown = (seconds) => {
     let timeLeft = seconds;

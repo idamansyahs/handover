@@ -234,30 +234,54 @@ const Index = () => {
             <div className="col-lg-7 col-md-6">
               <div className="row g-3">
                 <div className="col-lg-12 col-md-12 wow zoomIn" data-wow-delay="0.1s">
-                  <Link to="/attractions/ulee-lheue-beach" className="position-relative d-block overflow-hidden">
+                  {/* PERBAIKAN: Mengganti <Link> dengan <a> dan menambahkan label jarak */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden">
                     <img className="img-fluid" src={destination1} alt="Ulee Lheue Beach" />
+                    {/* Info Jarak & Waktu */}
+                    <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        3 mnt (1,7 km)
+                    </div>
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Ulee Lheue Beach</div>
-                  </Link>
+                  </a>
                 </div>
                 <div className="col-lg-6 col-md-12 wow zoomIn" data-wow-delay="0.3s">
-                  <Link to="/attractions/masjid-raya-baiturrahman" className="position-relative d-block overflow-hidden">
+                  {/* PERBAIKAN: Mengganti <Link> dengan <a> dan menambahkan label jarak */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden">
                     <img className="img-fluid" src={destination2} alt="Masjid Raya Baiturrahman" />
+                    {/* Info Jarak & Waktu */}
+                    <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        6 mnt (3,8 km)
+                    </div>
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Masjid Raya Baiturrahman</div>
-                  </Link>
+                  </a>
                 </div>
                 <div className="col-lg-6 col-md-12 wow zoomIn" data-wow-delay="0.5s">
-                  <Link to="/attractions/museum-aceh" className="position-relative d-block overflow-hidden">
+                  {/* PERBAIKAN: Mengganti <Link> dengan <a> dan menambahkan label jarak */}
+                  <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block overflow-hidden">
                     <img className="img-fluid" src={destination3} alt="Museum Aceh" />
+                    {/* Info Jarak & Waktu */}
+                    <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                        <i className="fas fa-car-side me-2"></i>
+                        7 mnt (3,7 km)
+                    </div>
                     <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Museum Aceh</div>
-                  </Link>
+                  </a>
                 </div>
               </div>
             </div>
             <div className="col-lg-5 col-md-6 wow zoomIn" data-wow-delay="0.7s" style={{ minHeight: '350px' }}>
-              <Link to="/attractions/museum-tsunami" className="position-relative d-block h-100 overflow-hidden">
+              {/* PERBAIKAN: Mengganti <Link> dengan <a> dan menambahkan label jarak */}
+              <a href="#" onClick={(e) => e.preventDefault()} className="position-relative d-block h-100 overflow-hidden">
                 <img className="img-fluid position-absolute w-100 h-100" src={destination4} alt="Museum Tsunami" style={{ objectFit: 'cover' }} />
+                {/* Info Jarak & Waktu */}
+                <div className="bg-dark text-primary fw-semi-bold position-absolute top-0 start-0 m-3 py-1 px-2 rounded-end" style={{fontSize: '0.9em', opacity: 0.9}}>
+                    <i className="fas fa-car-side me-2"></i>
+                    5 mnt (3 km)
+                </div>
                 <div className="bg-white text-primary fw-bold position-absolute bottom-0 end-0 m-3 py-1 px-2">Museum Tsunami</div>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
