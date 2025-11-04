@@ -1,0 +1,100 @@
+// src/App.jsx
+import React, { useRef } from "react"; // 1. Import useRef
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ScrollContext } from "./contexts/ScrollContext"; // 2. Import Context
+
+// Import Halaman Admin
+import Login from "./pages/Login.jsx";
+import Dashboard from "./pages/Dashboard";
+import Booking from "./pages/Bookings.jsx";
+import RoomList from "./pages/RoomList.jsx";
+import DaftarKonten from "./pages/konten/DaftarKonten.jsx";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout.jsx";
+
+// Import Halaman Landing Page
+import Index from "./pages/landingpage/Index.jsx";
+import About from "./pages/landingpage/About.jsx";
+import Attraction from "./pages/landingpage/Attraction.jsx";
+import Contact from "./pages/landingpage/Contact.jsx";
+import Gallery from "./pages/landingpage/Gallery.jsx";
+import Lava from "./pages/landingpage/Lava.jsx";
+import LavaGallery from "./pages/landingpage/LavaGallery.jsx";
+import Menu from "./pages/landingpage/Menu.jsx";
+import Room_LP from "./pages/landingpage/Room.jsx";
+import BookingForm from "./pages/landingpage/BookingForm.jsx";
+import BookingDetail from "./pages/landingpage/BookingDetail.jsx";
+import PaymentFinish from './pages/landingpage/PaymentFinish.jsx';
+
+// Import Komponen BackToTop
+import BackToTop from "./components/BackToTop.jsx";
+
+export default function App() {
+  // 3. Buat ref di sini, di level tertinggi
+  const mainContentRef = useRef(null);
+
+  return (
+    // 4. Provider membungkus SEMUANYA
+    <ScrollContext.Provider value={mainContentRef}>
+      <Routes>
+        {/* === Rute Publik (Landing Page) === */}
+        <Route path="/" element={<Index />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/attraction" element={<Attraction />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/gallery" element={<Gallery />} />
+        <Route path="/lava" element={<Lava />} />
+        <Route path="/lava-gallery" element={<LavaGallery />} />
+        <Route path="/menu" element={<Menu />} />
+        <Route path="/rooms" element={<Room_LP />} />
+        <Route path="/rooms/booking" element={<BookingForm />} />
+        <Route path="/rooms/booking/detail/:bookingId" element={<BookingDetail />} />
+        <Route path="/payment-finish" element={<PaymentFinish />} />
+
+        {/* Rute Login (di luar Layout Admin) */}
+        <Route path="/login" element={<Login />} />
+
+        {/* === Rute Admin (Di dalam Layout) === */}
+        {/* 5. Berikan ref ke Layout sebagai prop */}
+        <Route element={<Layout mainContentRef={mainContentRef} />}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bookings"
+            element={
+              <ProtectedRoute>
+                <Booking />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/room"
+            element={
+              <ProtectedRoute>
+                <RoomList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/konten-management"
+            element={
+              <ProtectedRoute>
+                <DaftarKonten />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+        </Route>
+      </Routes>
+
+      {/* 6. BackToTop sekarang berada di dalam Provider */}
+      <BackToTop />
+    </ScrollContext.Provider>
+  );
+}
